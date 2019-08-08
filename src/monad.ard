@@ -1,8 +1,7 @@
-\import Function (o)
+\import Function
 \import Paths
 \import list
 \import monoid
-\import funs
 \import sets
 
 \record TypeConstr (F : \Set -> \Set)
@@ -28,7 +27,7 @@
   | composition {_} {_} {C}  fa f g =>
     \let | gp x => pure (g x)
          | lu_extended => funExt (\lam _ => F C) gp (\lam b => flatMap (pure b) gp) (\lam b => inv ( left_unit b gp))
-    \in pmap (\lam u => flatMap fa (u ~ f)) lu_extended *>  assocmonad fa (pure ~ f) gp
+    \in pmap (\lam u => flatMap fa (u o f)) lu_extended *>  assocmonad fa (pure o f) gp
 }
 
 \record Trans {F : \Set -> \Set} {G : \Set -> \Set} (t : \Pi {A : \Set} (F A) -> G A)

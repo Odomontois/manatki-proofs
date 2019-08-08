@@ -1,0 +1,198 @@
+\import Paths
+
+\data day
+  | monday
+  | tuesday
+  | wednesday
+  | thursday
+  | friday
+  | saturday
+  | sunday
+
+\func next_weekday (d : day) : day
+  | monday    => tuesday
+  | tuesday   => wednesday
+  | wednesday => thursday
+  | thursday  => friday
+  | friday    => monday
+  | saturday  => monday
+  | sunday    => monday
+
+\lemma test_next_weekday : (next_weekday (next_weekday saturday)) = tuesday => idp
+
+\data bool
+  | true
+  | false
+
+\func negb (b : bool) : bool
+  | true => false
+  | false => true
+
+\func andb ( b1 : bool) (b2 : bool) : bool \elim b1
+  | true => b2
+  | false => false
+
+\func orb (b1 : bool) (b2 : bool) : bool \elim b1
+  | true => true
+  | false => b2
+
+\lemma test_orb1 : orb true  false = true => idp
+
+\lemma test_orb2 : orb false false = false => idp
+
+\lemma test_orb3 : orb false true = true => idp
+
+\lemma test_orb4 : orb true  true = true => idp
+
+\func \infixl 6 && => andb
+
+\func \infixl 5 || => orb
+
+\lemma test_orb5 :  false || false || true = true => idp
+
+\func nandb ( b1 : bool) ( b2 : bool) : bool => negb ( b1 && b2 )
+
+\lemma test_nandb1 : nandb true false = true => idp
+
+\lemma test_nandb2 : nandb false false = true => idp
+
+\lemma test_nandb3 : nandb false true = true => idp
+
+\lemma test_nandb4 : nandb true true = false => idp
+
+\func andb3 (b1 : bool) (b2 : bool) (b3 : bool) : bool => b1 && b2 && b3
+
+\lemma test_andb31 :                 andb3 true true true = true => idp
+
+\lemma test_andb32 :                 andb3 false true true = false => idp
+
+\lemma test_andb33 :                 andb3 true false true = false => idp
+
+\lemma test_andb34 :                 andb3 true true false = false => idp
+
+\data rgb
+  | red
+  | green
+  | blue
+
+\data color =>
+  | black
+  | white
+  | primary rgb
+
+\func monochrome (c : color) : bool
+  | black => true
+  | white => true
+  | primary q => false
+
+\func isred (c : color) : bool
+  | black => false
+  | white => false
+  | primary red => true
+  | primary _ => false
+
+\data bit
+  | B0
+  | B1
+
+\data nybble
+  | Bits (b0 b1 b2 b3 : bit)
+
+\func all_zero (nb : nybble) : bool
+  | (Bits B0 B0 B0 B0) => true
+  | _ => false
+
+\module NatPlayground \where {
+  \data nat
+    | O
+    | S nat
+
+  \data nat'
+    | stop
+    | tick (foo : nat')
+
+  \func pred (n : nat) : nat
+    | O => O
+    | S n' => n'
+}
+
+--\lemma ttt : suc (suc (suc (suc zero))) = zero => {?}
+
+\func minustwo (n : Nat) : Nat
+  | 0 => 0
+  | 1 => 0
+  | suc (suc n') => n'
+
+\func evenb ( n : Nat) : bool
+  | 0        => true
+  | 1     => false
+  | suc (suc n') => evenb n'
+
+\func oddb (n : Nat) : bool => negb (evenb n)
+
+\lemma test_oddb1 :    oddb 1 = true => idp
+
+\lemma test_oddb2 :    oddb 4 = false => idp
+
+\module NatPlayground2 \where {
+  \func plus (n : Nat) (m : Nat) : Nat \elim n
+    | 0 => m
+    | suc n' => suc (plus n' m)
+
+  \lemma plus3_2=5 : plus 3 2 = 5 => idp
+
+  \func mult (n : Nat) (m : Nat) : Nat \elim n
+    | 0 => 0
+    | suc n' => plus m (mult n' m)
+
+  \lemma mult_3_3=9 : mult 3 3 = 9 => idp
+
+  \func minus (n m : Nat) : Nat
+    | 0, _ => 0
+    | suc _ \as n, 0 => n
+    | suc n', suc m' => minus n' m'
+
+  \lemma minus6_4=2 : minus 6 4 = 2 => idp
+}
+
+\open Nat
+
+\func exp (base power : Nat) : Nat \elim power
+  | 0 => 1
+  | suc p => base * (exp base p)
+
+\func factorial (n : Nat) : Nat
+  | 0 => 1
+  | suc n' \as n => n * factorial n'
+
+\lemma test_factorial1 : factorial 3 = 6 => idp
+
+\lemma test_factorial2 : factorial 5 = 120 => idp
+
+\import Set
+\import Logic
+
+\func pred (n : Nat) : Nat
+  | 0 => 0
+  | suc n' => n'
+
+\lemma natDiscr (m : Nat) : Not (0 = suc m) =>
+  \lam h => coe (\lam i => matchT (h @ i)) () right
+  \where{
+    \func matchT (m : Nat) : \Prop
+      | 0 => \Sigma
+      | suc _ => Empty
+  }
+
+\lemma sucInj (m n : Nat) (p : suc m = suc n) : m = n => pmap pred p
+
+\import Function
+
+\func eqd  (n m : Nat) : Dec (n = m) \elim
+  | 0, 0 => yes idp
+  | 0 , suc n => no (natDiscr n)
+  | suc n , 0 => no (\lam p => natDiscr n (inv p))
+  | suc m, suc n => \case eqd m n \with {
+    | yes e => yes (pmap suc e)
+    | no ne => no ( ne o sucInj m n )
+  }
