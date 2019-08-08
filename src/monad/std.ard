@@ -74,23 +74,13 @@
 
   \lemma assocImpl {A B C W : \Set} (M : \Set -> \Set) {mm : Monad M} {wmon : Monoid W} (fa : M (\Sigma W A)) (f : A -> M (\Sigma W B) ) (g : B -> M (\Sigma W C) ) :
     fmImpl M fa (\lam a => fmImpl M (f a) g) = fmImpl M (fmImpl M fa f) g =>
-    \let | t {A B : \Set} (fa : M (\Sigma W A)) (f : A -> M (\Sigma W B)) => mm.flatMap fa (writMonFM M f)
-         | gg (wb : \Sigma W B) => mm.flatMap  (g wb.2) (\lam wc => mm.pure (wb.1 |+| wc.1 , wc.2))
-         | l1 (wa : \Sigma W A) => mm.flatMap  (mm.flatMap (f wa.2) gg) (\lam wc => mm.pure (wa.1 |+| wc.1, wc.2))
-         | l2 (wa : \Sigma W A) => mm.flatMap (f wa.2) (\lam wb => mm.flatMap  (gg wb) (\lam wc => mm.pure (wa.1 |+| wc.1, wc.2)))
-         | l2=l1 (wa : \Sigma W A): l2 wa = l1 wa => mm.assocmonad (_) (_) (_)
-         | r1 (wa : \Sigma W A) => mm.flatMap (mm.flatMap  (f wa.2)  (\lam wb => mm.pure (wa.1 |+| wb.1, wb.2))) gg
-         | r2 (wa : \Sigma W A) => mm.flatMap (f wa.2) (\lam wb => mm.flatMap ( mm.pure (wa.1 |+| wb.1, wb.2)) gg)
-         | r2=r1 (wa : \Sigma W A) : r2 wa = r1 wa  => mm.assocmonad (_) (_) (_)
-         | l2i (w : W) (wb : \Sigma W B) => mm.flatMap (mm.flatMap  (g wb.2) (\lam wc => mm.pure (wb.1 |+| wc.1 , wc.2))) (\lam wc => mm.pure (w |+| wc.1, wc.2))
-         | r2i (w : W) (wb : \Sigma W B) => mm.flatMap (mm.pure (w |+| wb.1, wb.2)) (\lam wb => mm.flatMap  (g wb.2) (\lam wc => mm.pure (wb.1 |+| wc.1 , wc.2)))
-         | l2i' (w : W) (wb : \Sigma W B) => mm.flatMap (g wb.2) (\lam wc => mm.pure (w |+|  (wb.1 |+| wc.1) , wc.2))
-         | r2i' (w : W) (wb : \Sigma W B) => mm.flatMap  (g wb.2) (\lam wc => mm.pure (w |+| wb.1 |+| wc.1 , wc.2))
-         | l2i'=l2i (w : W) (wb : \Sigma W B) : l2i' w wb = l2i w wb => mm.composition (g wb.2) (\lam wc => (wb.1 |+| wc.1 , wc.2)) (\lam wc => (w |+| wc.1, wc.2))
-         | r2i=r2i' (w : W) (wb : \Sigma W B) : r2i w wb = r2i' w wb => mm.left_unit (_) (_)
-         | l2i=r2i (w : W) (wb : \Sigma W B) : l2i w wb = r2i w wb  =>
+    \let | tail (wb : \Sigma W B) => mm.flatMap  (g wb.2) (\lam wc => mm.pure (wb.1 |+| wc.1 , wc.2))
+         | l2=l1 (wa : \Sigma W A) => mm.assocmonad (f wa.2) tail (\lam wc => mm.pure (wa.1 |+| wc.1, wc.2))
+         | r2=r1 (wa : \Sigma W A)  => mm.assocmonad (f wa.2) (\lam wb => mm.pure (wa.1 |+| wb.1, wb.2)) tail
+         | l2i'=l2i (w : W) (wb : \Sigma W B) => mm.composition (g wb.2) (\lam wc => (wb.1 |+| wc.1 , wc.2)) (\lam wc => (w |+| wc.1, wc.2))
+         | r2i=r2i' (w : W) (wb : \Sigma W B) => mm.left_unit (w |+| wb.1, wb.2) (\lam wb => mm.flatMap  (g wb.2) (\lam wc => mm.pure (wb.1 |+| wc.1 , wc.2)))
+         | l2i=r2i (w : W) (wb : \Sigma W B) =>
            (inv (l2i'=l2i w wb)) *> path (\lam i => mm.flatMap (g wb.2) (\lam wc => mm.pure ((inv (wmon.assoc w wb.1 wc.1)) @ i , wc.2)  )  ) *> (inv (r2i=r2i' w wb))
-         | internal (wa : \Sigma W A) : l1 wa = r1 wa => inv (l2=l1 wa) *> path (\lam i => mm.flatMap (f wa.2) (\lam wb => (l2i=r2i wa.1 wb) @ i)) *> r2=r1 wa
-         | x : t fa (\lam a => t (f a) g) = t(t fa f) g  => path(\lam i => mm.flatMap fa (\lam wa => internal wa @ i)) *> mm.assocmonad fa (_) gg
-    \in x
+         | internal (wa : \Sigma W A) => inv (l2=l1 wa) *> path (\lam i => mm.flatMap (f wa.2) (\lam wb => (l2i=r2i wa.1 wb) @ i)) *> r2=r1 wa
+    \in path(\lam i => mm.flatMap fa (\lam wa => internal wa @ i)) *> mm.assocmonad fa (_) tail
 }
