@@ -188,7 +188,7 @@
 
 \import Function
 
-\func eqd  (n m : Nat) : Dec (n = m) \elim
+\func eqd  (n m : Nat) : Dec (n = m)
   | 0, 0 => yes idp
   | 0 , suc n => no (natDiscr n)
   | suc n , 0 => no (\lam p => natDiscr n (inv p))
