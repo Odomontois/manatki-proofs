@@ -5,20 +5,20 @@
 \import funs
 \import sets
 
-\record TypeConstr (F : \Type  -> \Type  (\suc \lp) (\suc \lh))
+\record TypeConstr (F : \Set -> \Set)
 
 \class Functor \extends TypeConstr {
-  | map : \Pi {A B : \Type} ->  (A -> B)  -> F A -> F B
-  | identity : \Pi { A : \Type } (fa : F A) -> map id fa  = fa
-  | composition : \Pi { A B C : \Type } (fa : F A) (f : A -> B) (g : B -> C) -> map (g o f) fa  = (map g o map f) fa
+  \field map : \Pi {A B : \Set} ->  (A -> B)  -> F A -> F B
+  \property identity : \Pi { A : \Set } (fa : F A) -> map id fa  = fa
+  \property composition : \Pi { A B C : \Set } (fa : F A) (f : A -> B) (g : B -> C) -> map (g o f) fa  = (map g o map f) fa
 }
 
 \record BaseMonad \extends TypeConstr {
-  | pure : \Pi {A : \Type } -> A -> F A
-  | flatMap : \Pi {A B : \Type } -> F (A) -> (A -> F B) -> F B
-  | left_unit : \Pi { A B : \Type } (a : A) (f : A -> F B) -> flatMap (pure a) f = f a
-  | right_unit : \Pi { A : \Type } (fa : F A) -> flatMap fa pure = fa
-  | associativity : \Pi { A B C : \Type} (fa : F A) (f : A -> F B) (g : B -> F C) ->
+  | pure : \Pi {A : \Set } -> A -> F A
+  | flatMap : \Pi {A B : \Set  } -> F (A) -> (A -> F B) -> F B
+  \property left_unit : \Pi { A B : \Set  } (a : A) (f : A -> F B) -> flatMap (pure a) f = f a
+  \property right_unit : \Pi { A : \Set  } (fa : F A) -> flatMap fa pure = fa
+  \property assocmonad : \Pi { A B C : \Set} (fa : F A) (f : A -> F B) (g : B -> F C) ->
       flatMap fa (\lam x => flatMap (f x) g) = flatMap ( flatMap fa f ) g
 }
 
@@ -28,7 +28,7 @@
   | composition {_} {_} {C}  fa f g =>
     \let | gp x => pure (g x)
          | lu_extended => funExt (\lam _ => F C) gp (\lam b => flatMap (pure b) gp) (\lam b => inv ( left_unit b gp))
-    \in pmap (\lam u => flatMap fa (u ~ f)) lu_extended *>  associativity fa (pure ~ f) gp
+    \in pmap (\lam u => flatMap fa (u ~ f)) lu_extended *>  assocmonad fa (pure ~ f) gp
 }
 
 \record Trans {F : \Set -> \Set} {G : \Set -> \Set} (t : \Pi {A : \Set} (F A) -> G A)

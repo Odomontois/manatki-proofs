@@ -1,24 +1,24 @@
 \import Paths
 
 \class Semigroup (T : \Set){
-  | \infixr 5 |+| T T : T
-  \property associativity (a b c : T) : (a |+| b) |+| c = a |+| (b |+| c)
+  | \infixl 5 |+| T T : T
+  \property assoc (a b c : T) : (a |+| b) |+| c = a |+| (b |+| c)
 }
 
 
 \class Monoid \extends Semigroup{
   | empty : T
-  \property left_unit (a : T) :  empty |+| a = a
-  \property right_unit (a : T) : a |+| empty = a
+  \property left_empty (a : T) :  empty |+| a = a
+  \property right_empty (a : T) : a |+| empty = a
 }
 
 \open Nat
 \instance natMonoid : Monoid Nat
   | |+| a b => a + b
   | empty => 0
-  | left_unit => natZeroSum
-  | right_unit a => idp
-  | associativity => natAssoc
+  | left_empty => natZeroSum
+  | right_empty a => idp
+  | assoc => natAssoc
 
 \func natZeroSum (a : Nat) :  0 + a = a
   | zero => idp

@@ -25,9 +25,9 @@
   \instance listMonoid {A : \Type}: Monoid (List A)
     | empty => nil
     | combine => List.++
-    | left_unit a => idp
-    | right_unit => List.++nil
-    | associativity  => List.assoc
+    | left_empty a => idp
+    | right_empty => List.++nil
+    | assoc  => List.assoc
 }
 
 \data Elem {A : \Type} (e : A) (l : List A)

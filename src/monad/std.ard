@@ -9,64 +9,88 @@
   | flatMap fa f => f fa
   | left_unit _ _ => idp
   | right_unit _ => idp
-  | associativity _ _ _ => idp
+  | assocmonad _ _ _ => idp
 
 \func stateMonad (S : \Set) : Monad (\lam A => S -> \Sigma S A) \cowith
   | pure x s => (s, x)
   | flatMap fa f s => \let sa => fa s \in f sa.2 sa.1
   | left_unit _ _ => idp
   | right_unit _ => idp
-  | associativity _ _ _ => idp
+  | assocmonad _ _ _ => idp
 
 \func  readerMonad (R : \Set ) : Monad (\lam A => R -> A) \cowith
   | pure x a => x
   | flatMap fa f r => f (fa r) r
   | left_unit _ _ => idp
   | right_unit _ => idp
-  | associativity _ _ _ => idp
+  | assocmonad _ _ _ => idp
 
 \open Semigroup (|+|)
 
 \func writerMonad {W : \Set} {wmon : Monoid W} : Monad (\lam A => \Sigma W A) \cowith
-  | pure {_} x => (wmon.empty, x)
+  | pure {_} x => (empty, x)
   | flatMap {_} {_} fa f => \let fb => f (fa.2) \in (fa.1 |+| fb.1, fb.2)
-  | left_unit {_} {B} a f => \let fb => f a \in pairExt (wmon.left_unit fb.1) idp
-  | right_unit {A} fa => pairExt (wmon.right_unit fa.1) idp
-  | associativity {_} {_} {C} fa f g => \let | fb => f fa.2 | fc => g fb.2
-                                        \in pairExt (inv (wmon.associativity fa.1 fb.1 fc.1)) idp
+  | left_unit {_} {B} a f => \let fb => f a \in pairExt (left_empty fb.1) idp
+  | right_unit {A} fa => pairExt (right_empty fa.1) idp
+  | assocmonad {_} {_} {C} fa f g => \let | fb => f fa.2 | fc => g fb.2
+                                     \in pairExt (inv (assoc fa.1 fb.1 fc.1)) idp
 
-\func readerTMonad {R : \Set} {X : \Set -> \Set} {XM : Monad X} : Monad (\lam A => R -> XM.F A ) \cowith
-  | pure a => const (XM.pure a)
+\func readerTMonad {R : \Set} {M : \Set -> \Set} {XM : Monad M} : Monad (\lam A => R -> M A ) \cowith
+  | pure a => const (pure a)
   | flatMap fa f r => XM.flatMap (fa r) (\lam a => f a r)
-  | left_unit {_} {B} a f => functExt (\lam r => XM.left_unit a (\lam a => f a r))
-  | right_unit {A} fa => functExt  (\lam r => XM.right_unit (fa r))
-  | associativity {A} {B} {C} fa f g => functExt (\lam r => XM.associativity (fa r) (\lam a => f a r) (\lam b => g b r))
+  | left_unit {_} {B} a f => functExt (\lam r => left_unit a (\lam a => f a r))
+  | right_unit {A} fa => functExt  (\lam r => right_unit (fa r))
+  | assocmonad {A} {B} {C} fa f g => functExt (\lam r => assocmonad (fa r) (\lam a => f a r) (\lam b => g b r))
 
-\func stateTMonad {S : \Set} {X : \Set -> \Set }{XM : Monad X} : Monad (\lam A => S -> XM.F (\Sigma S A)) \cowith
-  | pure a s => XM.pure (s, a)
+\func stateTMonad {S : \Set} (M : \Set -> \Set ) {XM : Monad M} : Monad (\lam A => S -> M (\Sigma S A)) \cowith
+  | pure a s => pure (s, a)
   | flatMap fa f s => XM.flatMap (fa s) (\lam sa => f sa.2 sa.1)
-  | left_unit a f => functExt (\lam s => XM.left_unit (s, a) (\lam sa => f sa.2 sa.1))
-  | right_unit fa => functExt (\lam s => XM.right_unit (fa s) )
-  | associativity fa f g => functExt (\lam s => XM.associativity (fa s) (\lam sa => f sa.2 sa.1) (\lam sb => g sb.2 sb.1) )
-
-\func writMonFM' {W A B : \Set} {X : \Set -> \Set} (XM : Monad X) {wmon : Monoid W} (f : A -> XM.F (\Sigma W B) ) (wa : \Sigma W A) =>
-  XM.map  (\lam (wb : \Sigma W B) => (wa.1 |+| wb.1, wb.2)) (f wa.2)
+  | left_unit a f => functExt (\lam s => left_unit (s, a) (\lam sa => f sa.2 sa.1))
+  | right_unit fa => functExt (\lam s => right_unit (fa s) )
+  | assocmonad fa f g => functExt (\lam s => assocmonad (fa s) (\lam sa => f sa.2 sa.1) (\lam sb => g sb.2 sb.1) )
 
 \data WriterT (X W : \Set) | WriterT
 
-\func  writerTMonad {X W : \Set} (X : \Set -> \Set) {XM : Monad X} {wmon : Monoid W} : Monad (\lam A => X (\Sigma W A)) \cowith
-  | pure a => XM.pure (wmon.empty, a)
-  | flatMap fa f => XM.flatMap fa (writMonFM' XM f)
+\func  writerTMonad {W : \Set} (M : \Set -> \Set) {XM : Monad M} {wmon : Monoid W} : Monad (\lam A => M (\Sigma W A)) \cowith
+  | pure a => pure (empty, a)
+  | flatMap fa => fmImpl M fa
   | left_unit {A} {B} a f =>
-    \let | init => (wmon.empty, a)
-         | e1 => XM.left_unit init (writMonFM' XM f)
-         | e2' => functExt {_} {_}
-                           {\lam (wb : \Sigma W B) => XM.pure (wmon.empty |+| wb.1, wb.2)}  {XM.pure}
-                           (\lam (wb : \Sigma W B) => pmap (\lam w => XM.pure (w, wb.2)) (wmon.left_unit wb.1))
-         | e2 => pmap (\lam ff => XM.flatMap (f a) ff) e2'
-         | e3 => XM.right_unit (f a)
-    \in  e1 *> e2 *> e3
-  | right_unit fa => {?}
-  | associativity fa f g => {?} \where {
+    \let | e1 => left_unit (empty, a) (writMonFM M f)
+         | e2 =>  path(\lam i => flatMap (f a) (\lam x => pure (left_empty  x.1 @ i, x.2)))
+    \in  e1 *> e2 *> right_unit (f a)
+  | right_unit {A} fa => path (\lam i => flatMap fa (\lam wa => ruLemma W M wa @ i)) *> XM.right_unit fa
+  | assocmonad fa f g => assocImpl M fa f g \where {
+  \lemma ruLemma  (W : \Set) (X : \Set -> \Set ) {XM : Monad X} {wmon : Monoid W} {A : \Set } (wa : \Sigma W A) :
+    writMonFM X (\lam a => XM.pure (empty, a)) wa = XM.pure wa \elim wa
+    | (w, a) => left_unit (_) (_) *> path (\lam i => pure (right_empty w @ i, a))
 
+  \func fmImpl {A B W : \Set} (M : \Set -> \Set) {mm : Monad M} {mon : Monoid W} (fa : M (\Sigma W A)) (f : A -> M (\Sigma W B)) : M (\Sigma W B) =>
+    mm.flatMap fa (writMonFM M f)
+
+  \func writMonFM
+    {W : \Set} {A B : \Set} (M : \Set  -> \Set)
+    {XM : Monad M} {wmon : Monoid W} (f : A -> M (\Sigma W B) ) (wa : \Sigma W A):  M (\Sigma  W B) \elim wa
+    | (w, a) => map  (\lam (wb : \Sigma W B) => (w |+| wb.1, wb.2)) (f a)
+
+  \lemma assocImpl {A B C W : \Set} (M : \Set -> \Set) {mm : Monad M} {wmon : Monoid W} (fa : M (\Sigma W A)) (f : A -> M (\Sigma W B) ) (g : B -> M (\Sigma W C) ) :
+    fmImpl M fa (\lam a => fmImpl M (f a) g) = fmImpl M (fmImpl M fa f) g =>
+    \let | t {A B : \Set} (fa : M (\Sigma W A)) (f : A -> M (\Sigma W B)) => mm.flatMap fa (writMonFM M f)
+         | gg (wb : \Sigma W B) => mm.flatMap  (g wb.2) (\lam wc => mm.pure (wb.1 |+| wc.1 , wc.2))
+         | l1 (wa : \Sigma W A) => mm.flatMap  (mm.flatMap (f wa.2) gg) (\lam wc => mm.pure (wa.1 |+| wc.1, wc.2))
+         | l2 (wa : \Sigma W A) => mm.flatMap (f wa.2) (\lam wb => mm.flatMap  (gg wb) (\lam wc => mm.pure (wa.1 |+| wc.1, wc.2)))
+         | l2=l1 (wa : \Sigma W A): l2 wa = l1 wa => mm.assocmonad (_) (_) (_)
+         | r1 (wa : \Sigma W A) => mm.flatMap (mm.flatMap  (f wa.2)  (\lam wb => mm.pure (wa.1 |+| wb.1, wb.2))) gg
+         | r2 (wa : \Sigma W A) => mm.flatMap (f wa.2) (\lam wb => mm.flatMap ( mm.pure (wa.1 |+| wb.1, wb.2)) gg)
+         | r2=r1 (wa : \Sigma W A) : r2 wa = r1 wa  => mm.assocmonad (_) (_) (_)
+         | l2i (w : W) (wb : \Sigma W B) => mm.flatMap (mm.flatMap  (g wb.2) (\lam wc => mm.pure (wb.1 |+| wc.1 , wc.2))) (\lam wc => mm.pure (w |+| wc.1, wc.2))
+         | r2i (w : W) (wb : \Sigma W B) => mm.flatMap (mm.pure (w |+| wb.1, wb.2)) (\lam wb => mm.flatMap  (g wb.2) (\lam wc => mm.pure (wb.1 |+| wc.1 , wc.2)))
+         | l2i' (w : W) (wb : \Sigma W B) => mm.flatMap (g wb.2) (\lam wc => mm.pure (w |+|  (wb.1 |+| wc.1) , wc.2))
+         | r2i' (w : W) (wb : \Sigma W B) => mm.flatMap  (g wb.2) (\lam wc => mm.pure (w |+| wb.1 |+| wc.1 , wc.2))
+         | l2i'=l2i (w : W) (wb : \Sigma W B) : l2i' w wb = l2i w wb => mm.composition (g wb.2) (\lam wc => (wb.1 |+| wc.1 , wc.2)) (\lam wc => (w |+| wc.1, wc.2))
+         | r2i=r2i' (w : W) (wb : \Sigma W B) : r2i w wb = r2i' w wb => mm.left_unit (_) (_)
+         | l2i=r2i (w : W) (wb : \Sigma W B) : l2i w wb = r2i w wb  =>
+           (inv (l2i'=l2i w wb)) *> path (\lam i => mm.flatMap (g wb.2) (\lam wc => mm.pure ((inv (wmon.assoc w wb.1 wc.1)) @ i , wc.2)  )  ) *> (inv (r2i=r2i' w wb))
+         | internal (wa : \Sigma W A) : l1 wa = r1 wa => inv (l2=l1 wa) *> path (\lam i => mm.flatMap (f wa.2) (\lam wb => (l2i=r2i wa.1 wb) @ i)) *> r2=r1 wa
+         | x : t fa (\lam a => t (f a) g) = t(t fa f) g  => path(\lam i => mm.flatMap fa (\lam wa => internal wa @ i)) *> mm.assocmonad fa (_) gg
+    \in x
 }

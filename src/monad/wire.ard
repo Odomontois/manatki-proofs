@@ -15,8 +15,8 @@
       }
 
     \func addLlu {S A : \Type} {m : Monoid S} (sock : Socket S A) : addL emp sock = sock \elim sock
-      | vacant s => pmap vacant (m.left_unit s)
-      | full s a => pmap (\lam x => full x a) (m.left_unit s)
+      | vacant s => pmap vacant (m.left_empty s)
+      | full s a => pmap (\lam x => full x a) (m.left_empty s)
   }
 
 \func socketMonad (S : \Set) {smon : Monoid S} : Monad (Socket S) \cowith
@@ -24,7 +24,7 @@
   | flatMap sa => flmap sa
   | left_unit a f => Socket.addLlu (f a)
   | right_unit sa => runit sa
-  | associativity {A} fa f g =>n
+  | assocmonad {A} fa f g =>n
     \let eqfa fa' => flmap fa' (\lam x => flmap (f x) g) = flmap (flmap fa' f) g
     \in \case fa \as sock, idp : sock = fa \with {
       | vacant s , efa => transport eqfa efa idp
@@ -49,7 +49,7 @@
 
     \func runit {S A : \Type} {smon : Monoid S} (sa : Socket S A) : flmap sa (full emp) = sa \elim sa
       | vacant s => idp
-      | full s a => pmap (\lam x => full x a) (smon.right_unit s)
+      | full s a => pmap (\lam x => full x a) (smon.right_empty s)
   }
 
 \func wireMonad (S : \Set) : Monad (\lam A => S -> Socket S A) \cowith
@@ -57,7 +57,7 @@
   | flatMap wa fab s => cont (wa s) fab
   | left_unit a f => idp
   | right_unit {A} wa => path (\lam i s => runit (wa s) @ i)
-  | associativity {A} {B} {C} wa f g => path ( \lam i s => assoc (wa s) f g @ i )
+  | assocmonad {A} {B} {C} wa f g => path ( \lam i s => assoc (wa s) f g @ i )
   \where {
     \func runit {S A : \Set} (sa : Socket S A): cont sa pur = sa \elim sa
       | vacant _ => idp
@@ -81,14 +81,14 @@
   | flatMap wa => flmap X fm wa
   | left_unit {_} {B} a fab => path (\lam i s => fm.left_unit (full s a) (flmatch X fm fab) @ i)
   | right_unit {A} wa => path (\lam i s  => right-unit-step X {fm} wa s @ i )
-  | associativity {A} {B} {C} wa f g => path (\lam i s => assoc-1 X fm wa f g s @ i)
+  | assocmonad {A} {B} {C} wa f g => path (\lam i s => assoc-1 X fm wa f g s @ i)
   \where {
     \lemma assoc-1 {A B C S : \Set} (X : \Set -> \Set) (fm : Monad X) (wa : S -> X ( Socket S A))
                    (f : A -> S -> X (Socket S B)) (g : B -> S -> X (Socket S C)) (s : S):
     fm.flatMap (wa s) (flmatch X fm (\lam b s1 => fm.flatMap (f b s1) (flmatch X fm g))) =
     fm.flatMap (fm.flatMap (wa s) (flmatch X fm f)) (flmatch X fm g) =>
       transport (\lam u => fm.flatMap (wa s) u = fm.flatMap (fm.flatMap (wa s) (flmatch X fm f)) (flmatch X fm g))
-                (path ( \lam i s => assoc-2 X fm f g s @ i)) (fm.associativity (wa s) (_) (_))
+                (path ( \lam i s => assoc-2 X fm f g s @ i)) (fm.assocmonad (wa s) (_) (_))
 
     \lemma assoc-2 {A B C S : \Set} (X : \Set -> \Set) (fm : Monad X)
                    (f : A -> S -> X (Socket S B)) (g : B -> S -> X (Socket S C)) (sa : Socket S A) :
