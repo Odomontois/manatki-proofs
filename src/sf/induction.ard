@@ -1,0 +1,59 @@
+\import Paths
+\open Nat
+\import sf.basics
+\import Function
+
+\lemma plus_n_0 (n : Nat): n = 0 + n
+  | 0 => idp
+  | suc n => pmap suc (plus_n_0 n)
+
+\lemma minus_diag (n : Nat): n - n = 0
+  | 0 => idp
+  | suc n => minus_diag n
+
+\lemma mult_0_r (n : Nat) :  0 * n = 0
+  | 0 => idp
+  | suc n => mult_0_r n
+
+\lemma _1+n (n : Nat) : 1 + n = suc n
+  | 0 => idp
+  | suc n => pmap suc (_1+n n)
+
+\lemma plus_n_Sm (n m : Nat) : suc (n + m) = (suc n) + m \elim m
+  | 0 => idp
+  | suc m => pmap suc (plus_n_Sm n m)
+
+\lemma plus_comm (n m : Nat) :  n + m = m + n \elim m
+  | 0 => plus_n_0 n
+  | suc m => pmap suc (plus_comm n m) *> plus_n_Sm m n
+
+\lemma plus_assoc (n m p : Nat) : n + (m + p) = (n + m) + p \elim n
+  | 0 => inv (plus_n_0 (m + p)) *> pmap (\lam x => x + p) (plus_n_0 m)
+  | suc n => inv (plus_n_Sm _ _) *> pmap suc (plus_assoc _ _ _) *> plus_n_Sm _ _ *> pmap (\lam x => x + p) (plus_n_Sm _ _)
+
+\func double (n : Nat) : Nat
+  | 0 => 0
+  | suc n => suc (suc (double n))
+
+\lemma double_plus (n : Nat) : double n = n + n
+  | 0 => idp
+  | suc n => pmap (suc o suc) (double_plus n) *> pmap suc (plus_n_Sm _ _)
+
+\lemma evenb_S (n : Nat):  evenb (suc n) = negb (evenb n)
+  | 0 => idp
+  | suc n => inv (pmap negb (evenb_S n) *> negb_involutive _)
+
+\lemma mult_0_plus' (n m : Nat):   (n + 0) * m = n * m =>
+  \let H : n + 0 = n => idp
+  \in pmap (\lam p => p * m) H
+
+\lemma plus_rearrange (n m p q : Nat) : (n + m) + (p + q) = (m + n) + (p + q) =>
+  {-- We just need to swap (n + m) for (m + n)... seems
+  like plus_comm should do the trick! *--}
+  pmap (\lam x => x + _) (plus_comm _ _)
+
+\import Set
+
+\lemma n=?n (n : Nat) : n =? n = true =>
+  \let u : n ?== n = yes idp => Path.inProp _ _
+  \in pmap dec2bool u
