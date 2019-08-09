@@ -196,3 +196,10 @@
     | yes e => yes (pmap suc e)
     | no ne => no ( ne o sucInj m n )
   }
+
+\open Nat
+
+\func led (n m : Nat) : Dec (n <= m)
+  | 0, _ => yes (zero<=_)
+  | suc _ , 0 => {?}
+  | suc _ , suc _ => {?}
