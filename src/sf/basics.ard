@@ -176,7 +176,7 @@
   | 0 => 0
   | suc n' => n'
 
-\lemma natDiscr (m : Nat) : Not (0 = suc m) =>
+\lemma natDiscr {m : Nat} : Not (0 = suc m) =>
   \lam h => coe (\lam i => matchT (h @ i)) () right
   \where{
     \func matchT (m : Nat) : \Prop
@@ -188,18 +188,190 @@
 
 \import Function
 
-\func eqd  (n m : Nat) : Dec (n = m)
+\func dec2bool {p : \Prop} (d : Dec p) : bool
+  | yes _ => true
+  | no _ => false
+
+\func \infix 5 ?==  (n m : Nat) : Dec (n = m)
   | 0, 0 => yes idp
-  | 0 , suc n => no (natDiscr n)
-  | suc n , 0 => no (\lam p => natDiscr n (inv p))
-  | suc m, suc n => \case eqd m n \with {
+  | 0 , suc n => no natDiscr
+  | suc n , 0 => no (\lam p => natDiscr (inv p))
+  | suc m, suc n => \case ?== m n \with {
     | yes e => yes (pmap suc e)
     | no ne => no ( ne o sucInj m n )
   }
 
-\open Nat
+\func eqb  (n m : Nat) => dec2bool ( n ?== m)
 
-\func led (n m : Nat) : Dec (n <= m)
+\instance natDecidableEq {n m : Nat} : Decide (n = m)
+  | decide => n ?== m
+
+\open Nat
+\import Arith.Nat
+
+\func \infix 5 ?<= (n m : Nat) : Dec (n <= m)
   | 0, _ => yes (zero<=_)
-  | suc _ , 0 => {?}
-  | suc _ , suc _ => {?}
+  | suc _ \as n, 0 => no (\lam p => natDiscr (inv (NatLE.<=-antisymmetric p zero<=_)))
+  | suc m , suc n => \case  m ?<= n \with {
+    | yes p => yes (suc<=suc p)
+    | no ne => no (\lam p => ne (NatLE.unsuc p) )
+  }
+
+\func leb (n m : Nat) => dec2bool (n ?<= m)
+
+\instance natDecidable<= {n m : Nat} : Decide (n <= m)
+  | decide => n ?<= m
+
+\lemma test_led1 : leb 2 2 = true => idp
+
+\lemma test_leb2 : leb 2 4 = true => idp
+
+\lemma test_leb3 : leb 4 2 = false => idp
+
+\func \infix 5 =? => eqb
+
+\func \infix 5 <=? => leb
+
+\import HLevel
+
+\record \infix 4 < (n m : Nat)  {
+  | le : n <= m
+  | neq : Not (n = m)
+}
+
+\func \infix 5 ?< (n m : Nat) : Dec (n < m) => \case n ?<= m \with{
+  | no n>m => no (\lam (cp : n < m) => n>m cp.le)
+  | yes n<=m => \case n ?== m \with {
+    | yes n=m => no (\lam (cp : n < m) => cp.neq n=m)
+    | no n!=m => yes \new (n < m) n<=m n!=m
+  }
+}
+
+\func \infix 5 <? (x y : Nat) => dec2bool (x ?< y)
+
+\lemma test_ltb1 :  2 <? 2 = false => idp
+
+\lemma test_ltb2 : 2 <? 4 = true => idp
+
+\lemma test_ltb3 :  4 <? 2 = false => idp
+
+\lemma  plus_O_n  (n : Nat) : n + 0 = n => idp
+
+\lemma  plus_1_l (n : Nat) : n + 1 = suc n => idp
+
+\lemma  mult_0_l (n : Nat) : n * 0 = 0 => idp
+
+\lemma mult_S_1 (n m : Nat) (m=suc_n :  m = suc n) : m * (n + 1) = m * m =>
+  \let p : n + 1 = m => plus_1_l n *> inv m=suc_n  \in path (\lam i => m * (p @ i))
+
+\lemma plus_1_neq_0 (n : Nat) : (n + 1) =? 0 = false
+  | 0 => idp
+  | suc _ => idp
+
+\lemma negb_involutive (b : bool) :  negb (negb b) = b
+  | true => idp
+  | false => idp
+
+\lemma andb_commutative (b c : bool) :  andb b c = andb c b
+  | true, true => idp
+  | true, false => idp
+  | false, true => idp
+  | false, false => idp
+
+\lemma andb3_exchange (a b c : bool) : andb (andb a b) c = andb a (andb b c)
+  | true, true, true => idp
+  | true, true, false => idp
+  | true, false, true => idp
+  | true, false, false => idp
+  | false, true, true => idp
+  | false, true, false => idp
+  | false, false, true => idp
+  | false, false, false => idp
+
+\lemma plus_1_neq_0' (n : Nat) : (1 + n) =? 0 = false
+  | 0 => idp
+  | suc _ => idp
+
+\lemma andb_true_elim2 (b c : bool) : andb b c = true -> c = true
+  | true, true => id
+  | true, false => id
+  | false, true => \lam _ => idp
+  | false, false => id
+
+\lemma zero_nbeq_plus_1 (n : Nat): 0 =? (n + 1) = false
+  | 0 => idp
+  | suc _ => idp
+
+\lemma identity_fn_applied_twice (f : bool -> bool)
+                                 (p : \Pi (x : bool) -> f x = x)
+                                 (b : bool) :  f (f b) = b =>
+  path (\lam i => p ( p b @ i) @ i)
+
+\lemma negation_fn_applied_twice (f : bool -> bool)
+                                 (p : \Pi (x : bool) -> f x = negb x)
+                                 (b : bool) :  f (f b) = b =>
+  path (\lam i => p ( p b @ i) @ i) *> negb_involutive b
+
+\lemma andb_eq_orb (b c : bool) : (andb b c = orb b c) -> b = c
+  | true, true => id
+  | true, false => inv
+  | false, true => id
+  | false, false => id
+
+\data bin : \Set
+  | bz
+  | b1 bin
+  | b0 bin \with {
+    | bz => bz
+  }
+
+\func bincr (b : bin) : bin
+  | bz => b1 bz
+  | b0 n => b1 n
+  | b1 n => b0 (bincr n)
+
+\func bin_to_nat (m : bin) : Nat
+  | bz => 0
+  | b0 n => (bin_to_nat n) * 2
+  | b1 n => suc ((bin_to_nat n) * 2)
+
+--- --- --- --- --- --- --- --- --- --- ---
+
+\import Equiv
+\import Set.Fin
+
+\class Finite (A : \Set) {
+  | size : Nat
+  | indexOf : A -> Fin size
+  | byIndex : Fin size -> A
+  \property finInj (a : A) : byIndex (indexOf a) = a
+  \property finSurj (i : Fin size) : indexOf ( byIndex  i) = i
+}
+
+\instance finiteBool : Finite bool
+  | size => 2
+  | indexOf => index-of
+  | byIndex => by-index
+  | finInj  => injective
+  | finSurj => surjective
+  \where {
+    \func index-of (b : bool) : Fin 2
+      | true => fzero
+      | false => fsuc fzero
+
+    \func by-index (f : Fin 2) : bool
+      | fzero => true
+      | fsuc fzero => false
+      | fsuc (fsuc fz)  => fin0-absurd fz
+
+    \lemma injective (a : bool) : by-index ( index-of a) = a
+      | true => idp
+      | false => idp
+
+    \lemma surjective (i : Fin 2) : index-of (by-index i) = i
+      | fzero => idp
+      | fsuc fzero => idp
+      | fsuc (fsuc fz)  => fin0-absurd fz
+  }
+
+
