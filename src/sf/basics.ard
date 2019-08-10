@@ -318,24 +318,7 @@
   | false, true => id
   | false, false => id
 
-\data bin : \Set
-  | bz
-  | b1 bin
-  | b0 bin \with {
-    | bz => bz
-  }
 
-\func bincr (b : bin) : bin
-  | bz => b1 bz
-  | b0 n => b1 n
-  | b1 n => b0 (bincr n)
-
-\func bin_to_nat (m : bin) : Nat
-  | bz => 0
-  | b0 n => (bin_to_nat n) * 2
-  | b1 n => suc ((bin_to_nat n) * 2)
-
---- --- --- --- --- --- --- --- --- --- ---
 
 \import Equiv
 \import Set.Fin

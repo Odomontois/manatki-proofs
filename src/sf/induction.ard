@@ -57,3 +57,43 @@
 \lemma n=?n (n : Nat) : n =? n = true =>
   \let u : n ?== n = yes idp => Path.inProp _ _
   \in pmap dec2bool u
+
+\data bin : \Set
+  | bz
+  | b1 bin
+  | b0 bin \with {
+    | bz => bz
+  }
+
+\func bincr (b : bin) : bin
+  | bz => b1 bz
+  | b0 n => b1 n
+  | b1 n => b0 (bincr n)
+
+\func bin_to_nat (m : bin) : Nat
+  | bz => 0
+  | b0 n => double (bin_to_nat n)
+  | b1 n => suc (double (bin_to_nat n))
+
+\func nat_to_bin (m : Nat) : bin
+  | zero => bz
+  | suc n => bincr (nat_to_bin n)
+
+\lemma bin_nat_injection (b : bin) : nat_to_bin (bin_to_nat b) = b
+  | bz => idp
+  | b0 b => {?}
+  | b1 b => {?} \where {
+  \lemma incr-bincr (n : Nat) : bincr (nat_to_bin n) = nat_to_bin (suc n)
+    | zero => idp
+    | suc n => idp
+
+  \lemma double_nat (n : Nat) : nat_to_bin (double n) = b0 (nat_to_bin n)
+    | zero => idp
+    | suc n => pmap (bincr o bincr)  (double_nat n)
+}
+
+\lemma bin_nat_surjection (m : Nat) : bin_to_nat (nat_to_bin m) = m
+  | zero => idp
+  | suc n => {?}
+
+--- --- --- --- --- --- --- --- --- --- ---
