@@ -1,10 +1,12 @@
+\import Equiv
+\import Equiv.Univalence
+\import Function
 \import Paths
 
 \class Semigroup (T : \Set){
   | \infixl 5 |+| T T : T
   \property assoc (a b c : T) : (a |+| b) |+| c = a |+| (b |+| c)
 }
-
 
 \class Monoid \extends Semigroup{
   | empty : T
@@ -13,12 +15,35 @@
 }
 
 \open Nat
+
 \instance natMonoid : Monoid Nat
   | |+| a b => a + b
   | empty => 0
   | left_empty => natZeroSum
   | right_empty a => idp
   | assoc => natAssoc
+
+\record Endo (A : \Type) {
+  \field f : A -> A
+} \where {
+  \use \coerce runEndo {A : \Type } (e : Endo A) : A -> A => e.f
+
+  \use \coerce endo {A : \Type} (f : A -> A) : Endo A \cowith | f => f
+
+  \func qequiv {A : \Type } : QEquiv (runEndo {A}) (endo {A}) \cowith
+    | ret_f x => idp
+    | f_sec x => idp
+
+  \func endoIsFunc {A : \Type } : Endo A = (A -> A) => QEquiv-to-= qequiv
+}
+
+\instance endoMonoid {A : \Set} : Monoid (Endo A)
+  | |+| (a : Endo A) (b : Endo A) => Endo.endo (\lam x => b.f ( a.f x) )
+  | empty => Endo.endo id
+  | assoc a b c => idp
+  | left_empty x => idp
+  | right_empty x => idp
+
 
 \func natZeroSum (a : Nat) :  0 + a = a
   | zero => idp

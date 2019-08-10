@@ -1,0 +1,30 @@
+\import Function
+\import Paths
+\import list
+\import monoid
+\open Endo
+
+\class Foldable (F : \Set -> \Set  (\suc \lp) )  {
+  \field foldMap {A B : \Set} {am : Monoid B} (f : A -> B) (fa : F A) : B
+}
+
+\instance foldableList : Foldable List
+  | foldMap  => foldMapImpl
+  \where {
+    \func foldMapImpl {A B : \Set} {am : Monoid B} (f : A -> B) (fa : List A) : B \elim fa
+      | nil => am.empty
+      | :: h t => f h |+| foldMapImpl f t
+  }
+
+\func foldr {F : \Set -> \Set} {ff : Foldable F} {A B : \Set} (f : A -> B -> B) (z : B) (fa : F A) : B =>
+  runEndo (ff.foldMap {_} {Endo B} {endoMonoid} (\lam x => endo (f x)) fa) z
+
+\record MonoList (A B : \Set){
+  | a=b : A = B
+  | list : List A
+}
+
+\func monoList (A B : \Set) : \Set => MonoList A B
+
+\instance monoListFoldabe {A : \Set} : Foldable (monoList A)
+  | foldMap {B C : \Set} {am} f (fb : MonoList A B) => foldMap {_} {_} {_} {am} f (transport List fb.a=b fb.list )

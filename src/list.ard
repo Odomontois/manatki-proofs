@@ -5,7 +5,7 @@
 
 \data List (A : \Type)
   | nil
-  | \infix 6 :: (a : A) (tail : List A) \where {
+  | \infixr 6 :: (a : A) (tail : List A) \where {
   \func length {A : \Type } (l : List A) : Nat
     | nil => Nat.zero
     | :: _ t => suc (length t)
@@ -22,9 +22,9 @@
     | nil => idp
     | (:: h la') => pmap (:: h) (assoc la' lb lc)
 
-  \instance listMonoid {A : \Type}: Monoid (List A)
+  \instance listMonoid {A : \Set}: Monoid (List A)
     | empty => nil
-    | combine => List.++
+    | |+| => List.++
     | left_empty a => idp
     | right_empty => List.++nil
     | assoc  => List.assoc
