@@ -85,10 +85,6 @@
   | b0 b => double_nat (bin_to_nat b) *> pmap b0 (bin_nat_injection b)
   | b1 b => pmap bincr (double_nat (bin_to_nat b)) *> pmap b1 (bin_nat_injection b) \where {
 
-  \lemma incr-bincr (n : Nat) : bincr (nat_to_bin n) = nat_to_bin (suc n)
-    | zero => idp
-    | suc n => idp
-
   \lemma double_nat (n : Nat) : nat_to_bin (double n) = b0 (nat_to_bin n)
     | zero => idp
     | suc n => pmap (bincr o bincr)  (double_nat n)
