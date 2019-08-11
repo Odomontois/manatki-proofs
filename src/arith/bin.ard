@@ -1,0 +1,58 @@
+\import  Paths
+\import Equiv
+\import Function
+
+\data bin : \Set
+  | bz
+  | \fixr 4 b1 bin
+  | \fixr 4 b0 bin \with {
+    | bz => bz
+  }
+
+\func bincr (b : bin) : bin
+  | bz => b1 bz
+  | b0 n => b1 n
+  | b1 n => b0 (bincr n)
+
+\func bin->nat (m : bin) : Nat
+  | bz => 0
+  | b0 n => double (bin->nat n)
+  | b1 n => suc (double (bin->nat n))
+  \where {
+    \lemma bin_to_nat_test1 : bin->nat (bz `b1 `b0 `b1 `b0) = 10 => idp
+
+    \lemma bin_to_nat_test2 : bin->nat (bz `b0 `b0 `b1 `b1 `b0) = 6 => idp
+  }
+
+\func nat->bin (m : Nat) : bin
+  | zero => bz
+  | suc n => bincr (nat->bin n)
+
+\lemma bin<:nat (b : bin) : nat->bin (bin->nat b) = b
+  | bz => idp
+  | b0 b => double_nat (bin->nat b) *> pmap b0 (bin<:nat b)
+  | b1 b => pmap bincr (double_nat (bin->nat b)) *> pmap b1 (bin<:nat b) \where {
+  \lemma double_nat (n : Nat) : nat->bin (double n) = b0 (nat->bin n)
+    | zero => idp
+    | suc n => pmap (bincr o bincr)  (double_nat n)
+}
+
+\func double (n : Nat) : Nat
+  | 0 => 0
+  | suc n => suc (suc (double n))
+
+\lemma bin:>nat (m : Nat) : bin->nat (nat->bin m) = m
+  | zero => idp
+  | suc n => bincr-incr (nat->bin n) *> pmap suc (bin:>nat n)
+  \where {
+    \lemma bincr-incr (b : bin) : bin->nat (bincr b) = suc (bin->nat b)
+      | bz => idp
+      | b0 b => idp
+      | b1 b => pmap double (bincr-incr b)
+  }
+
+\func bin<->nat : QEquiv bin->nat \cowith
+  | ret => nat->bin
+  | ret_f => bin<:nat
+  | f_sec => bin:>nat
+
