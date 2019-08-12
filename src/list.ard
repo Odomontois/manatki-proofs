@@ -6,6 +6,7 @@
 \import sets
 \import Function
 \import Order.LinearOrder
+\import Order.Lattice
 
 \data List (A : \Type)
   | nil
@@ -35,18 +36,15 @@
 
   \open TotalOrder (totality)
   \open || (byLeft, byRight)
+  \open JoinSemilattice (join-comm)
 
-
-  \func minimum {A : \Set} {to : XOrder A} (a : A) (as : List A) : A \elim as
+  \func minimum {A : \Set} {to : JoinSemilattice A} (a : A) (as : List A) : A \elim as
     | nil => a
-    | :: a' tail => \case total a a' \with{
-      | IsLeft _ _ => minimum a tail
-      | IsRight _ _ => minimum a' tail
-    } \where {
-    \lemma unordered {A : \Set} {to : XOrder A} (a a' : A) (as : List A) :
-      minimum a (a' :: as) = minimum a' (a :: as) => {?}
-  }
-
+    | :: a' tail =>  minimum (join a a') tail
+    \where {
+      \lemma unordered {A : \Set} {to : JoinSemilattice A} (a a' : A) (as : List A) :
+        minimum a (a' :: as) = minimum a' (a :: as) => pmap (\lam x => minimum x as) (join-comm _ _)
+    }
 }
 
 \data Elem {A : \Type} (e : A) (l : List A)

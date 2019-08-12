@@ -1,4 +1,6 @@
+\import Order.LinearOrder
 \import Order.StrictOrder
+\import Order.Lattice
 \import Set
 \import Logic
 \import Paths
@@ -15,18 +17,27 @@
       | IsRight b na, IsLeft a nb => absurd (na a)
   }
 
-\class XOrder \extends StrictPoset, DecSet{
-  | total (a b : E): a < b Xor b < a Xor (a = b)
-} \where {
-  \func min {A : \Set} {xo : XOrder A} (a a' : A) : A => \case total a a' \with{
-    | IsLeft _  _ => a
-    | IsRight _ _ => a'
+\open StrictPoset
+\open LinearOrder.Dec
+
+\func xcompare {A : \Set} {to : LinearOrder.Dec A} (a b : A) : (a = b) Xor a < {to} b Xor a > b =>
+  \case trichotomy a b \with {
+    | byLeft a=b => IsLeft(IsLeft a=b (\lam a<b => distinct= a<b a=b)) (\lam a>b => distinct= a>b (inv a=b))
+    | byRight (byLeft a<b) => IsLeft ( IsRight a<b (\lam a=b => distinct= a<b a=b)) (\lam a>b => distinct< a<b a>b)
+    | byRight (byRight a>b) => IsRight a>b (\lam a<=b => \case a<=b \with {
+      | IsLeft a=b a!<b => distinct= a>b (inv a=b)
+      | IsRight a<b a!=b => distinct< a<b a>b
+    })
   } \where {
+  \lemma distinct= {A : \Set} {to : LinearOrder.Dec A} {a b : A} (lt : a < b) (e : a = b) : Empty =>
+    <-irreflexive b (coe  (\lam i => e @ i < b) lt right)
 
-  }
-
-  \func max {A : \Set} {xo : XOrder A} (a a' : A) : A => \case total a a' \with{
-    | IsLeft _  _ => a'
-    | IsRight _ _ => a
-  }
+  \lemma distinct< {A : \Set} {to : LinearOrder.Dec A} {a b : A} (lt : a < b) (gt : a > b) : Empty =>
+    <-irreflexive a (<-transitive a b a lt gt)
 }
+
+\open LinearOrder.Dec (=>TotalOrder)
+
+\func max {A : \Set} {xo : LinearOrder.Dec A} (a a' : A) : A => meet {=>TotalOrder} a a'
+
+\func min {A : \Set} {xo : LinearOrder.Dec A} (a a' : A) : A => join {=>TotalOrder} a a'
