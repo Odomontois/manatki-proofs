@@ -2,6 +2,7 @@
 \import Logic
 \import Paths
 \import monoid
+\import order
 \import sets
 \import Function
 \import Order.LinearOrder
@@ -35,12 +36,17 @@
   \open TotalOrder (totality)
   \open || (byLeft, byRight)
 
-  \func minimum {A : \Set} {to : TotalOrder A} (a : A) (xs : List A) : A \elim xs
+
+  \func minimum {A : \Set} {to : XOrder A} (a : A) (as : List A) : A \elim as
     | nil => a
-    | :: a' tail => \case totality a a' \with{
-      | byLeft _ => minimum a tail
-      | byRight _ => minimum a' tail
-    }
+    | :: a' tail => \case total a a' \with{
+      | IsLeft _ _ => minimum a tail
+      | IsRight _ _ => minimum a' tail
+    } \where {
+    \lemma unordered {A : \Set} {to : XOrder A} (a a' : A) (as : List A) :
+      minimum a (a' :: as) = minimum a' (a :: as) => {?}
+  }
+
 }
 
 \data Elem {A : \Type} (e : A) (l : List A)

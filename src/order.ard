@@ -1,0 +1,32 @@
+\import Order.StrictOrder
+\import Set
+\import Logic
+\import Paths
+\import HLevel
+
+\data \infixl 2 Xor (A B : \Prop)
+  | IsLeft A (Not B)
+  | IsRight B (Not A)
+  \where {
+    \use \level xorIsProp {A B : \Prop} (x1 x2 : Xor A B) : x1 = x2
+      | IsLeft  a1 nb1, IsLeft a2 nb2 => pmap2 IsLeft (Path.inProp a1 a2) (Path.inProp nb1 nb2)
+      | IsRight b1 na1, IsRight b2 na2 => pmap2 IsRight (Path.inProp b1 b2) (Path.inProp na1 na2)
+      | IsLeft  a nb, IsRight b na => absurd (na a)
+      | IsRight b na, IsLeft a nb => absurd (na a)
+  }
+
+\class XOrder \extends StrictPoset, DecSet{
+  | total (a b : E): a < b Xor b < a Xor (a = b)
+} \where {
+  \func min {A : \Set} {xo : XOrder A} (a a' : A) : A => \case total a a' \with{
+    | IsLeft _  _ => a
+    | IsRight _ _ => a'
+  } \where {
+
+  }
+
+  \func max {A : \Set} {xo : XOrder A} (a a' : A) : A => \case total a a' \with{
+    | IsLeft _  _ => a'
+    | IsRight _ _ => a
+  }
+}
