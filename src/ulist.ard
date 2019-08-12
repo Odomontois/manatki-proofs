@@ -1,0 +1,23 @@
+\import list
+\open Nat
+\import Order.LinearOrder (LinearOrder)
+
+
+\data UList (A : \Type)
+  | unil
+  | \infixr 6 ~:: (a : A) (tail : UList A)
+  | swap (i : I) (a b : A) (tail : UList A) \elim i {
+    | left  => a ~:: b ~:: tail
+    | right => b ~:: a ~:: tail
+  } \where {
+  \func ulist {A : \Type} {do : LinearOrder.Dec A} (ul : UList A): List A
+    | unil => nil
+    | ~:: a t => a :: (ulist t)
+    | swap i a b t => {?}
+
+  \func size {A : \Type} (ul : UList A): Nat
+    | unil => 0
+    | ~:: a t => suc (size t)
+    | swap i a b t =>  size t + 2
+}
+
