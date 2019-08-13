@@ -66,37 +66,64 @@
         minimum a (a' :: as) = minimum a' (a :: as) => pmap (\lam x => minimum x as) (join-comm _ _)
     }
 
-  \func bubbleSort {A : \Set} {la : Lattice A} (as : List A) : List A
-    | nil => nil
-    | :: a tail => \let (a', tail') => pop a tail \in a' :: bubbleSort tail'
+  \func SortedList (A : \Set) {po : Poset A} : \Set => \Sigma (l : List A) (ListIsOrdered l)
 
+  \func insertionSort {A : \Set} {la : Lattice A} (as : List A) : SortedList A => {?}
     \where {
-      \func pop {A : \Set} {la : Lattice A} (a : A) (as : List A) : \Sigma A (List A)
-        | a, nil => (a, nil)
-        | a , :: b tail => \let (b', tail') => pop b tail \in (join a b', (meet a b') :: tail)
+      \record Inserted {A : \Set} {la : Lattice A} (a h : A) {
+        | head : A
+        | tail  : List A
+        | ordered : ListIsOrdered ( head :: tail)
+        | upper : head <= meet a h
+        | lower : head >= join a h
+      }
 
-      \lemma pop1 {A : \Set} {la : Lattice A} (a : A): pop a  nil = (a, nil) => idp
+      \open ListIsOrdered
 
-      \lemma pop2 {A : \Set} {la : Lattice A} (a b : A): pop a (b :: nil) = (join a b, meet a b :: nil) => idp
+      \func insert{A : \Set} {la : Lattice A} (a h : A) {as : List A} (od : ListIsOrdered (h :: as)) : Inserted a h \elim od
+        | ord-nil p => absurd (List.discriminate (inv p))
+        | ord-single _ _ =>
+          \let jab<=mab =>  <=-transitive _ _ _ (join-left a h)  (meet-left a h)
+          \in \new Inserted {
+            | head => join a h
+            | tail => meet a h :: nil
+            | ordered => for-cons _ _ _ jab<=mab (for-single _)
+            | upper => jab<=mab
+            | lower => <=-reflexive _
+          }
+        | ord-cons b c t b<=c next p =>
+          \let | f => join a b
+               | s => meet a b
+               | ins : Inserted s c => insert s c next
+          \in \new Inserted {
+            | head => join a h
+            | tail => ins.head :: ins.tail
+            | ordered => {?}
+            | upper => {?}
+            | lower => {?}
+          }
 
-      \lemma bs2 {A : \Set} {la : Lattice A} (a b : A) : bubbleSort (a :: b :: nil) = join a b :: meet a b :: nil => {?}
-
-      \lemma unordered {A : \Set} {la : Lattice A} (a b : A) (as : List A) : bubbleSort (a :: b :: as) = bubbleSort (b :: a :: as) \elim  as
-        | nil => \let | abs => bubbleSort (a :: b :: nil)
-                      | bas => bubbleSort (b :: a :: nil)
-                      | abs' => join a b :: meet a b :: nil
-                      | e1 : abs = abs' => idp
-                      | eq : abs = bas => {?}
-                 \in eq
-        | :: c  t => {?}
+      --        | nil => \new Inserted a a nil (for-single a) (la.<=-reflexive a)
+      --        | :: b nil =>
+      --          \let jab<=mab =>  <=-transitive _ _ _ (join-left a b)  (meet-left a b)
+      --          \in \new Inserted a (join a b) (meet a b :: nil) (for-cons _ _ _ jab<=mab (for-single _)) (join-left a b)
+      --        | :: b (:: c t') \as t =>
+      --          \let | first => join a b
+      --               | second => meet a b
+      --          \in \case od \with {
+      --            | ord-nil p => {?}
+      --            | ord-single c p => {?}
+      --            | ord-cons _ _ _ _ _ p => {?}
+      --          }
     }
 }
+}
 
-\data OrderedList {A : \Set} {po : Poset A} (l : List A)
+\data ListIsOrdered {A : \Set} {po : Poset A} (l : List A)
   | ord-nil (p : l = nil)
   | ord-single (a : A) (p : l = a :: nil)
-  | ord-cons (a b : A) (t : List A) (po : a <= b) (next : OrderedList ( b :: t)) (p : l = a :: b :: t ) \where {
-  \use \level orderedList-is-prop {A : \Set} {po : Poset A} {l : List A} (o1 o2 : OrderedList l) : o1 = o2 \elim o1, o2
+  | ord-cons (a b : A) (t : List A) (po : a <= b) (next : ListIsOrdered ( b :: t)) (p : l = a :: b :: t ) \where {
+  \use \level orderedList-is-prop {A : \Set} {po : Poset A} {l : List A} (o1 o2 : ListIsOrdered l) : o1 = o2 \elim o1, o2
     | ord-nil p1 , ord-nil p2 => pmap ord-nil (Path.inProp _ _)
     | ord-nil p1 , ord-single a2 p2 => absurd (List.discriminate ((inv p1) *>  p2))
     | ord-nil p1 , ord-cons a2 b2 t2 po2 next2 p2 => absurd (List.discriminate ((inv p1) *>  p2))
@@ -115,7 +142,7 @@
     | ord-cons a1 b1 t1 po1 next1 p1 , ord-cons a2 b2 t2 po2 next2 p2 =>
       \let | (a1=a2, bt1=bt2)      => List.::-injective ((inv p1) *> p2)
            | (b1=b2, t1=t2)        => List.::-injective bt1=bt2
-           | nexti (i : I) : \Prop => OrderedList ((b1=b2 @ i) :: (t1=t2 @ i))
+           | nexti (i : I) : \Prop => ListIsOrdered ((b1=b2 @ i) :: (t1=t2 @ i))
            | next1=next2           => pathInProp nexti next1 next2
            | pi (i : I) : \Prop    => l = (a1=a2 @ i) :: (b1=b2 @ i) :: (t1=t2 @ i)
            | p1=p2                 => pathInProp pi p1 p2
@@ -123,7 +150,12 @@
            | po1=po2               => pathInProp poi po1 po2
       \in path(\lam i => ord-cons (a1=a2 @ i) (b1=b2 @ i) (t1=t2 @ i) (po1=po2 @ i) (next1=next2 @ i) (p1=p2 @ i))
 
-  -- path(\lam i => ord-cons )
+  \lemma for-nil {A : \Set} {po : Poset A} : ListIsOrdered {A} nil => ord-nil idp
+
+  \lemma for-single {A : \Set} {po : Poset A} (a : A) : ListIsOrdered {A} (a :: nil) => ord-single a idp
+
+  \lemma for-cons {A : \Set} {po : Poset A} (a b : A) (t : List A) (po : a <= b) (next : ListIsOrdered ( b :: t)) :
+    ListIsOrdered {A} (a :: b :: t) => ord-cons a b t po next idp
 }
 
 \data Elem {A : \Type} (e : A) (l : List A)
