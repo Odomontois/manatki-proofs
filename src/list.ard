@@ -74,13 +74,18 @@
     | nil => (nil, ord-nil idp)
     | :: h t => \let (h, t, ord) => sort1 h t \in (h :: t, ord)
     \where {
-      \record Inserted {A : \Set} {la : Lattice A} (a h : A) {
+      \record Inserted {A : \Set} {la : Lattice A} (a : A) {
         | head : A
         | tail  : List A
         | ordered : ListIsOrdered ( head :: tail)
-        | upper : head <= meet a h
-        | lower : head >= join a h
+        | lower : head >= a
       }
+
+      \func insLower {A : \Set} {la : Lattice A} {a b : A} (p : b <= a) (i : Inserted a) : Inserted b \cowith
+        | head => i.head
+        | tail => i.tail
+        | ordered => i.ordered
+        | lower => p ~*>  i.lower
 
       \open ListIsOrdered
 
@@ -88,10 +93,10 @@
         | nil => (a, nil, ord-single a idp)
         | :: b t =>
           \let | (b', t', ord) => sort1 b t
-               | ins : Inserted a b' => insert a b' ord
+               | ins : Inserted (join a b') => insert a b' ord
           \in (ins.head, ins.tail, ins.ordered)
 
-      \func insert{A : \Set} {la : Lattice A} (a h : A) {as : List A} (od : ListIsOrdered (h :: as)) : Inserted a h \elim od
+      \func insert{A : \Set} {la : Lattice A} (a h : A) {as : List A} (od : ListIsOrdered (h :: as)) : Inserted (join a h) \elim od
         | ord-nil p => absurd (List.discriminate (inv p))
         | ord-single _ _ =>
           \let jab<=mab =>  <=-transitive _ _ _ (join-left a h)  (meet-left a h)
@@ -99,14 +104,13 @@
             | head => join a h
             | tail => meet a h :: nil
             | ordered => ord-cons _ _ _ jab<=mab (ord-single _ idp) idp
-            | upper => jab<=mab
             | lower => <=-reflexive _
           }
         | ord-cons b c t b<=c next p =>
           \let | f => join a h
                | s => meet a h
                | (h=b, _p1) => List.::-injective p
-               | ins : Inserted s c => insert s c next
+               | ins : Inserted (join s c) => insert s c next
                | h<=c => transport (\lam x => x <= c) (inv h=b) b<=c
                | f<=s => join-left a h ~*> meet-left a h
                | f<=c => join-right a h ~*> h<=c
@@ -115,9 +119,20 @@
             | head => join a h
             | tail => ins.head :: ins.tail
             | ordered => ord-cons (join a h) ins.head ins.tail f<=h' ins.ordered idp
-            | upper => f<=s
             | lower => <=-reflexive f
           }
+
+      \func insert2  {A : \Set}{la : Lattice A} (a b h : A) {as : List A} (od : ListIsOrdered (h :: as))
+        : Inserted (a `join` b `join` h) =>
+        \let | ins1 : Inserted (join b h) =>  insert b h od
+             | ins2 : Inserted (join a ins1.head) => insert a ins1.head ins1.ordered
+             | ie => a `join` b `join` h
+             | ie<=a : ie <= a => join-left _ _
+             | ie<=h' : ie <= ins1.head => join-right _ _ ~*> ins1.lower
+        \in insLower (join-univ _ _ _ ie<=a ie<=h') ins2
+
+      \lemma insert2comm {A : \Set} {la : Lattice A} (a b h : A) {as : List A}  (od : ListIsOrdered (h :: as)) =>
+
     }
 }
 

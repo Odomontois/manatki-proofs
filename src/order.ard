@@ -44,3 +44,7 @@
 \func min {A : \Set} {xo : LinearOrder.Dec A} (a a' : A) : A => join {=>TotalOrder} a a'
 
 \func \infixl 4 ~*> {A : \Set} {po : Preorder A} {a b c : A} (ie1 : a <= b) (ie2 : b <= c) : a <= c => <=-transitive a b c  ie1 ie2
+
+\open JoinSemilattice
+\lemma join-swap2 {A : \Set} {po : JoinSemilattice A} (a b c : A) : join (join a b ) c = join (join b a) c => {?}
+
