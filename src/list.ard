@@ -123,16 +123,16 @@
           }
 
       \func insert2  {A : \Set}{la : Lattice A} (a b h : A) {as : List A} (od : ListIsOrdered (h :: as))
-        : Inserted (a `join` b `join` h) =>
+        : Inserted (join (join a b) h) =>
         \let | ins1 : Inserted (join b h) =>  insert b h od
              | ins2 : Inserted (join a ins1.head) => insert a ins1.head ins1.ordered
-             | ie => a `join` b `join` h
-             | ie<=a : ie <= a => join-left _ _
-             | ie<=h' : ie <= ins1.head => join-right _ _ ~*> ins1.lower
-        \in insLower (join-univ _ _ _ ie<=a ie<=h') ins2
+             | ie => join (join a b) h
+             | ie<=a : ie <= a => join-left _ _ ~*> join-left _ _
+             | ie<=h' : ie <= ins1.head => {?} -- join-right _ _ ~*> ins1.lower
+        \in {?} -- insLower (join-univ _ _ _ ie<=a ie<=h') ins2
 
       \lemma insert2comm {A : \Set} {la : Lattice A} (a b h : A) {as : List A}  (od : ListIsOrdered (h :: as)) =>
-
+        insert2 a b h od = transport Inserted (join-swap2 )
     }
 }
 

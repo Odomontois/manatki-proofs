@@ -43,8 +43,18 @@
 
 \func min {A : \Set} {xo : LinearOrder.Dec A} (a a' : A) : A => join {=>TotalOrder} a a'
 
-\func \infixl 4 ~*> {A : \Set} {po : Preorder A} {a b c : A} (ie1 : a <= b) (ie2 : b <= c) : a <= c => <=-transitive a b c  ie1 ie2
+\func \infixl 4 ~*> {A : \Set} {po : Preorder A} {a b c : A} (ie1 : a <= b) (ie2 : b <= c) : a <= c =>
+  <=-transitive a b c ie1 ie2
 
 \open JoinSemilattice
-\lemma join-swap2 {A : \Set} {po : JoinSemilattice A} (a b c : A) : join (join a b ) c = join (join b a) c => {?}
+
+\lemma join-swap2 {A : \Set} {po : JoinSemilattice A} (a b c : A) : join (join a b) c = join (join b a) c =>
+  <=-antisymmetric _ _ (join-swap' _ _ _) (join-swap' _ _ _) \where {
+  \lemma join-comm' {A : \Set }{po : JoinSemilattice A} (a b : A) : join a b <= join b a =>
+    coe (\lam i => join a b <= join-comm a b @ i ) (<=-reflexive _) right
+
+  \lemma join-swap' {A : \Set} {po : JoinSemilattice A} (a b c : A) : join (join a b) c <= join (join b a) c =>
+    (join-univ _ _ _ (join-left _ _ ~*> join-comm' _ _) (join-right _ _))
+}
+
 
