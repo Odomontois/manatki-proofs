@@ -68,7 +68,11 @@
 
   \func SortedList (A : \Set) {po : Poset A} : \Set => \Sigma (l : List A) (ListIsOrdered l)
 
-  \func insertionSort {A : \Set} {la : Lattice A} (as : List A) : SortedList A => {?}
+  \func SortedList1 (A : \Set) {po : Poset A} : \Set => \Sigma (h : A) (t : List A) (ListIsOrdered (h :: t))
+
+  \func insertionSort {A : \Set} {la : Lattice A} (as : List A) : SortedList A
+    | nil => (nil, ord-nil idp)
+    | :: h t => \let (h, t, ord) => sort1 h t \in (h :: t, ord)
     \where {
       \record Inserted {A : \Set} {la : Lattice A} (a h : A) {
         | head : A
@@ -80,6 +84,13 @@
 
       \open ListIsOrdered
 
+      \func sort1 {A : \Set} {la : Lattice A} (a : A) (as : List A) : SortedList1 A \elim as
+        | nil => (a, nil, ord-single a idp)
+        | :: b t =>
+          \let | (b', t', ord) => sort1 b t
+               | ins : Inserted a b' => insert a b' ord
+          \in (ins.head, ins.tail, ins.ordered)
+
       \func insert{A : \Set} {la : Lattice A} (a h : A) {as : List A} (od : ListIsOrdered (h :: as)) : Inserted a h \elim od
         | ord-nil p => absurd (List.discriminate (inv p))
         | ord-single _ _ =>
@@ -87,36 +98,27 @@
           \in \new Inserted {
             | head => join a h
             | tail => meet a h :: nil
-            | ordered => for-cons _ _ _ jab<=mab (for-single _)
+            | ordered => ord-cons _ _ _ jab<=mab (ord-single _ idp) idp
             | upper => jab<=mab
             | lower => <=-reflexive _
           }
         | ord-cons b c t b<=c next p =>
-          \let | f => join a b
-               | s => meet a b
+          \let | f => join a h
+               | s => meet a h
+               | (h=b, _p1) => List.::-injective p
                | ins : Inserted s c => insert s c next
+               | h<=c => transport (\lam x => x <= c) (inv h=b) b<=c
+               | f<=s => join-left a h ~*> meet-left a h
+               | f<=c => join-right a h ~*> h<=c
+               | f<=h' :  f <= ins.head => join-univ _ _ _ f<=s f<=c  ~*> ins.lower
           \in \new Inserted {
             | head => join a h
             | tail => ins.head :: ins.tail
-            | ordered => {?}
-            | upper => {?}
-            | lower => {?}
+            | ordered => ord-cons (join a h) ins.head ins.tail f<=h' ins.ordered idp
+            | upper => f<=s
+            | lower => <=-reflexive f
           }
-
-      --        | nil => \new Inserted a a nil (for-single a) (la.<=-reflexive a)
-      --        | :: b nil =>
-      --          \let jab<=mab =>  <=-transitive _ _ _ (join-left a b)  (meet-left a b)
-      --          \in \new Inserted a (join a b) (meet a b :: nil) (for-cons _ _ _ jab<=mab (for-single _)) (join-left a b)
-      --        | :: b (:: c t') \as t =>
-      --          \let | first => join a b
-      --               | second => meet a b
-      --          \in \case od \with {
-      --            | ord-nil p => {?}
-      --            | ord-single c p => {?}
-      --            | ord-cons _ _ _ _ _ p => {?}
-      --          }
     }
-}
 }
 
 \data ListIsOrdered {A : \Set} {po : Poset A} (l : List A)
@@ -149,13 +151,6 @@
            | poi (i : I) : \Prop   => (a1=a2 @ i) <= (b1=b2 @ i)
            | po1=po2               => pathInProp poi po1 po2
       \in path(\lam i => ord-cons (a1=a2 @ i) (b1=b2 @ i) (t1=t2 @ i) (po1=po2 @ i) (next1=next2 @ i) (p1=p2 @ i))
-
-  \lemma for-nil {A : \Set} {po : Poset A} : ListIsOrdered {A} nil => ord-nil idp
-
-  \lemma for-single {A : \Set} {po : Poset A} (a : A) : ListIsOrdered {A} (a :: nil) => ord-single a idp
-
-  \lemma for-cons {A : \Set} {po : Poset A} (a b : A) (t : List A) (po : a <= b) (next : ListIsOrdered ( b :: t)) :
-    ListIsOrdered {A} (a :: b :: t) => ord-cons a b t po next idp
 }
 
 \data Elem {A : \Type} (e : A) (l : List A)
