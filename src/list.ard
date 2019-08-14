@@ -72,120 +72,147 @@
         minimum a (a' :: as) = minimum a' (a :: as) => pmap (\lam x => minimum x as) (join-comm _ _)
     }
 
+  \func sort {A : \Set} {la : Lattice A} (as : List A) : List A
+    | nil => nil
+    | :: a t => insert a (sort t)
 
-\func sort {A : \Set} {la : Lattice A} (as : List A) : List A
-  | nil => nil
-  | :: a t => insert a (sort t)
+    \where {
+      \open ListIsOrdered
 
-  \where {
-    \open ListIsOrdered
+      \func insert{A : \Set} {la : Lattice A} (a : A) (as : List A)  : List A \elim as
+        | nil => a :: nil
+        | :: b t => (join a b) :: insert (meet a b) t
 
-    \func insert{A : \Set} {la : Lattice A} (a : A) (as : List A)  : List A \elim as
-      | nil => a :: nil
-      | :: b t => (join a b) :: insert (meet a b) t
+      \func insert2 {A : \Set} {la : Lattice A} (a b : A) (as : List A) : List A => insert a (insert b as)
 
-    \lemma insSort-sorting {A : \Set} {la : Lattice A} (as : List A) : ListIsOrdered (sort as)
-      | nil => ord-nil idp
-      | :: a t => insert-keeps-order a (sort t) (insSort-sorting t)
+      \lemma insSort-sorting {A : \Set} {la : Lattice A} (as : List A) : ListIsOrdered (sort as)
+        | nil => ord-nil idp
+        | :: a t => insert-keeps-order a (sort t) (insSort-sorting t)
 
-    \lemma insert-keeps-order {A : \Set} {la : Lattice A} (a : A) (as : List A) (od : ListIsOrdered as) : ListIsOrdered (insert a as) =>
-      \let ins : Inserted a as => insert-cons a as od
-      \in transport ListIsOrdered ins.el ins.od
+      \lemma insert-keeps-order {A : \Set} {la : Lattice A} (a : A) (as : List A) (od : ListIsOrdered as) : ListIsOrdered (insert a as) =>
+        \let ins : Inserted a as => insert-cons a as od
+        \in transport ListIsOrdered ins.el ins.od
 
-    \record Inserted  {A : \Set} {la : Lattice A} (a : A) (as : List A){
-      | h : A
-      | tail : List A
-      | od : ListIsOrdered (h :: tail)
-      | el : h :: tail = insert a as
-      | eh : join (List.head a as) a = h
+      \record Inserted  {A : \Set} {la : Lattice A} (a : A) (as : List A){
+        | h : A
+        | tail : List A
+        | od : ListIsOrdered (h :: tail)
+        | el : h :: tail = insert a as
+        | eh : join (List.head a as) a = h
+      }
+
+      \open JoinSemilattice
+
+      \func insert-cons {A : \Set} {la : Lattice A} (a : A) (as : List A) (od : ListIsOrdered as) : Inserted a as \elim as
+        | nil => inil a
+        | :: b t =>
+          \let r => insert-cons (meet a b) t (tailIsOrdered od)
+          \in icons a b t od r
+        \where {
+          \open List
+
+          \func inil {A : \Set} {la : Lattice A} (a : A) : Inserted a nil \cowith
+            | h => a
+            | tail => nil
+            | od => ord-single a idp
+            | el => idp
+            | eh => join-idemp _
+
+          \func icons {A : \Set} {la : Lattice A} (a b : A) (as : List A)
+                      (od : ListIsOrdered (b :: as)) (rec : Inserted (meet a b) as)
+            : Inserted a (b :: as) \cowith
+            | h => join a b
+            | tail => insert (meet a b) as
+            | od =>
+              \let  | h'<=h : join a b <= head (meet a b) as => join-right _ _ ~*> head-is-min od ~*> head-monotone _ _ _ (meet-right _ _)
+                    | ie : join a b <= join (head (meet a b) as) (meet a b) => join-univ _ _ _ h'<=h (join<=meet _ _)
+              \in ord-cons (join a b) rec.h rec.tail (transport (<= (join a b)) rec.eh ie) rec.od (pmap (:: (join a b)) (inv rec.el))
+            | el => idp
+            | eh => join-comm _ _
+        }
+
+      \lemma insert2-comm {A : \Set} {la : Lattice A} (a b : A) (as : List A) (od : ListIsOrdered as) : insert2 a b as = insert2 b a as \elim od
+        | ord-nil p =>
+          \let x : insert2 a b nil = insert2 b a nil =>
+                 pmap2 (\lam x y => x :: y :: nil) (join-comm a b) (meet-comm a b)
+          \in transport (\lam l => insert2 a b l = insert2 b a l) (inv p) x
+        | ord-single c p => {?}
+        | ord-cons c d t po next p => {?}
+        \where {
+          \lemma insert2Empty {A : \Set} {la : Lattice A} (a b : A) : insert2 a b nil = join a b :: meet a b :: nil =>
+            idp
+
+          \lemma insert2Single {A : \Set} {la : Lattice A} (a b c : A) : insert2 a b (c :: nil) =
+          join a (join b c) :: join (meet a (join b c)) (meet b c) :: meet (meet a (join b c)) (meet b c) :: nil => idp
+        }
     }
 
-    \open JoinSemilattice
+  \data ListIsOrdered {A : \Set} {po : Poset A} (l : List A)
+    | ord-nil (p : l = nil)
+    | ord-single (a : A) (p : l = a :: nil)
+    | ord-cons (a b : A) (t : List A) (po : a <= b) (next : ListIsOrdered ( b :: t)) (p : l = a :: b :: t ) \where {
+    \use \level orderedList-is-prop {A : \Set} {po : Poset A} {l : List A} (o1 o2 : ListIsOrdered l) : o1 = o2 \elim o1, o2
+      | ord-nil p1 , ord-nil p2 => pmap ord-nil (Path.inProp _ _)
+      | ord-nil p1 , ord-single a2 p2 => absurd (discriminate ((inv p1) *>  p2))
+      | ord-nil p1 , ord-cons a2 b2 t2 po2 next2 p2 => absurd (discriminate ((inv p1) *>  p2))
+      | ord-single a1 p1,  ord-nil p2 => absurd (discriminate ((inv p2) *>  p1))
+      | ord-single a1 p1,  ord-single a2 p2 =>
+        \let | (a1=a2 , _p) => ::-injective ( (inv p1) *> p2 )
+             | ei (i : I) => l = (a1=a2 @ i) :: nil
+        \in path (\lam i => ord-single (a1=a2 @ i) (pathInProp ei p1 p2 @ i))
+      | ord-single a1 p1,  ord-cons a2 b2 t2 po2 next2 p2 =>
+        \let | (_p , nil=t2) => ::-injective ((inv p1) *> p2)
+        \in absurd (List.discriminate nil=t2)
+      | ord-cons a1 b1 t1 po1 next1 p1 , ord-nil p2 => absurd (discriminate ((inv p2) *>  p1))
+      | ord-cons a1 b1 t1 po1 next1 p1 , ord-single a2 p2 =>
+        \let | (_p, nil=t1) => ::-injective ((inv p2) *> p1)
+        \in absurd (List.discriminate nil=t1)
+      | ord-cons a1 b1 t1 po1 next1 p1 , ord-cons a2 b2 t2 po2 next2 p2 =>
+        \let | (a1=a2, bt1=bt2)      => ::-injective ((inv p1) *> p2)
+             | (b1=b2, t1=t2)        => ::-injective bt1=bt2
+             | nexti (i : I) : \Prop => ListIsOrdered ((b1=b2 @ i) :: (t1=t2 @ i))
+             | next1=next2           => pathInProp nexti next1 next2
+             | pi (i : I) : \Prop    => l = (a1=a2 @ i) :: (b1=b2 @ i) :: (t1=t2 @ i)
+             | p1=p2                 => pathInProp pi p1 p2
+             | poi (i : I) : \Prop   => (a1=a2 @ i) <= (b1=b2 @ i)
+             | po1=po2               => pathInProp poi po1 po2
+        \in path(\lam i => ord-cons (a1=a2 @ i) (b1=b2 @ i) (t1=t2 @ i) (po1=po2 @ i) (next1=next2 @ i) (p1=p2 @ i))
 
-    \func insert-cons {A : \Set} {la : Lattice A} (a : A) (as : List A) (od : ListIsOrdered as) : Inserted a as \elim as
-      | nil => inil a
-      | :: b t =>
-        \let r => insert-cons (meet a b) t (tailIsOrdered od)
-        \in icons a b t od r
-      \where {
-        \open List
+    \lemma tailIsOrdered {A : \Set} {po : Poset A} {a : A} {l : List A} (p : ListIsOrdered (a :: l)): ListIsOrdered l
+      | ord-nil e => absurd (List.discriminate (inv e))
+      | ord-single h e => \let (a=h, l=nil) => ::-injective e \in ord-nil l=nil
+      | ord-cons a b t po next e  => \let (a=h, l=bt) => ::-injective e \in transport ListIsOrdered (inv l=bt) next
 
-        \func inil {A : \Set} {la : Lattice A} (a : A) : Inserted a nil \cowith
-          | h => a
-          | tail => nil
-          | od => ord-single a idp
-          | el => idp
-          | eh => join-idemp _
+    \lemma head-is-min {A : \Set} {po : Poset A} {a : A} {l : List A} (p : ListIsOrdered (a :: l)) : a <= List.head a l \elim l, p
+      | nil, _ => <=-reflexive _
+      | :: b t, ord-nil p => absurd (discriminate (inv p))
+      | :: b t, ord-single b' p => \let (_h, te) => ::-injective p \in absurd (discriminate (inv te))
+      | :: b t, ord-cons a' b' t' po _ p =>
+        \let | (a=a', bt=bt') => ::-injective p
+             | (b=b', t=t') => ::-injective bt=bt'
+        \in transport2 (<=) (inv a=a') (inv b=b') po
 
-        \func icons {A : \Set} {la : Lattice A} (a b : A) (as : List A)
-                    (od : ListIsOrdered (b :: as)) (rec : Inserted (meet a b) as)
-          : Inserted a (b :: as) \cowith
-          | h => join a b
-          | tail => insert (meet a b) as
-          | od =>
-            \let  | h'<=h : join a b <= head (meet a b) as => join-right _ _ ~*> head-is-min od ~*> head-monotone _ _ _ (meet-right _ _)
-                  | ie : join a b <= join (head (meet a b) as) (meet a b) => join-univ _ _ _ h'<=h (join<=meet _ _)
-            \in ord-cons (join a b) rec.h rec.tail (transport (<= (join a b)) rec.eh ie) rec.od (pmap (:: (join a b)) (inv rec.el))
-          | el => idp
-          | eh => join-comm _ _
-      }
+    \lemma get-cons {A : \Set} {po : Poset A} {a b : A} {l : List A}(p : ListIsOrdered (a :: b :: l)) : \Sigma (a <= b) (ListIsOrdered (b :: l)) \elim p
+      | ord-nil p => (absurd o discriminate o inv) p
+      | ord-single _ p => \let (_h, pt) => ::-injective p \in (absurd o discriminate o inv) pt
+      | ord-cons a' b' l' a<=b next p =>
+        \let | (a=a', bl=bl') => ::-injective p
+             | (b=b', l=l') => ::-injective bl=bl'
+        \in (
+          transport2 (<=) (inv a=a') (inv b=b') a<=b,
+          transport2 (\lam h t => ListIsOrdered (h :: t)) (inv b=b') (inv l=l') next
+        )
   }
 
-\data ListIsOrdered {A : \Set} {po : Poset A} (l : List A)
-  | ord-nil (p : l = nil)
-  | ord-single (a : A) (p : l = a :: nil)
-  | ord-cons (a b : A) (t : List A) (po : a <= b) (next : ListIsOrdered ( b :: t)) (p : l = a :: b :: t ) \where {
-  \use \level orderedList-is-prop {A : \Set} {po : Poset A} {l : List A} (o1 o2 : ListIsOrdered l) : o1 = o2 \elim o1, o2
-    | ord-nil p1 , ord-nil p2 => pmap ord-nil (Path.inProp _ _)
-    | ord-nil p1 , ord-single a2 p2 => absurd (discriminate ((inv p1) *>  p2))
-    | ord-nil p1 , ord-cons a2 b2 t2 po2 next2 p2 => absurd (discriminate ((inv p1) *>  p2))
-    | ord-single a1 p1,  ord-nil p2 => absurd (discriminate ((inv p2) *>  p1))
-    | ord-single a1 p1,  ord-single a2 p2 =>
-      \let | (a1=a2 , _p) => ::-injective ( (inv p1) *> p2 )
-           | ei (i : I) => l = (a1=a2 @ i) :: nil
-      \in path (\lam i => ord-single (a1=a2 @ i) (pathInProp ei p1 p2 @ i))
-    | ord-single a1 p1,  ord-cons a2 b2 t2 po2 next2 p2 =>
-      \let | (_p , nil=t2) => ::-injective ((inv p1) *> p2)
-      \in absurd (List.discriminate nil=t2)
-    | ord-cons a1 b1 t1 po1 next1 p1 , ord-nil p2 => absurd (discriminate ((inv p2) *>  p1))
-    | ord-cons a1 b1 t1 po1 next1 p1 , ord-single a2 p2 =>
-      \let | (_p, nil=t1) => ::-injective ((inv p2) *> p1)
-      \in absurd (List.discriminate nil=t1)
-    | ord-cons a1 b1 t1 po1 next1 p1 , ord-cons a2 b2 t2 po2 next2 p2 =>
-      \let | (a1=a2, bt1=bt2)      => ::-injective ((inv p1) *> p2)
-           | (b1=b2, t1=t2)        => ::-injective bt1=bt2
-           | nexti (i : I) : \Prop => ListIsOrdered ((b1=b2 @ i) :: (t1=t2 @ i))
-           | next1=next2           => pathInProp nexti next1 next2
-           | pi (i : I) : \Prop    => l = (a1=a2 @ i) :: (b1=b2 @ i) :: (t1=t2 @ i)
-           | p1=p2                 => pathInProp pi p1 p2
-           | poi (i : I) : \Prop   => (a1=a2 @ i) <= (b1=b2 @ i)
-           | po1=po2               => pathInProp poi po1 po2
-      \in path(\lam i => ord-cons (a1=a2 @ i) (b1=b2 @ i) (t1=t2 @ i) (po1=po2 @ i) (next1=next2 @ i) (p1=p2 @ i))
+  \data Elem {A : \Type} (e : A) (l : List A)
+    | Here (t : List A) (eq : e :: t = l)
+    | There (h : A) (t : List A) (elem : Elem e t) (eq : h :: t = l) \where {
+    \func here!=there {A B : \Type} (e h : A) (l t1 t2 : List A) (el : Elem e t2)
+                      (eq1 : e :: t1 = l) (eq2 : h :: t2 = l)
+                      (p : Here t1 eq1 = There h t2 el eq2 )  : B =>
+      coe (\lam i => \case p @ i \with { Here _ _ => \Sigma | There _ _ _ _  => B }) () right
 
-  \lemma tailIsOrdered {A : \Set} {po : Poset A} {a : A} {l : List A} (p : ListIsOrdered (a :: l)): ListIsOrdered l
-    | ord-nil e => absurd (List.discriminate (inv e))
-    | ord-single h e => \let (a=h, l=nil) => ::-injective e \in ord-nil l=nil
-    | ord-cons a b t po next e  => \let (a=h, l=bt) => ::-injective e \in transport ListIsOrdered (inv l=bt) next
-
-  \lemma head-is-min {A : \Set} {po : Poset A} {a : A} {l : List A} (p : ListIsOrdered (a :: l)) : a <= List.head a l \elim l, p
-    | nil, _ => <=-reflexive _
-    | :: b t, ord-nil p => absurd (discriminate (inv p))
-    | :: b t, ord-single b' p => \let (_h, te) => ::-injective p \in absurd (discriminate (inv te))
-    | :: b t, ord-cons a' b' t' po _ p =>
-      \let | (a=a', bt=bt') => ::-injective p
-           | (b=b', t=t') => ::-injective bt=bt'
-      \in transport2 (<=) (inv a=a') (inv b=b') po
-}
-
-\data Elem {A : \Type} (e : A) (l : List A)
-  | Here (t : List A) (eq : e :: t = l)
-  | There (h : A) (t : List A) (elem : Elem e t) (eq : h :: t = l) \where {
-  \func here!=there {A B : \Type} (e h : A) (l t1 t2 : List A) (el : Elem e t2)
-                    (eq1 : e :: t1 = l) (eq2 : h :: t2 = l)
-                    (p : Here t1 eq1 = There h t2 el eq2 )  : B =>
-    coe (\lam i => \case p @ i \with { Here _ _ => \Sigma | There _ _ _ _  => B }) () right
-
-  \func tail-elem {A : \Type} (e h : A) (l : List A) (elem : Elem e l) : Elem e (h :: l) => There h l elem idp
-}
+    \func tail-elem {A : \Type} (e h : A) (l : List A) (elem : Elem e l) : Elem e (h :: l) => There h l elem idp
+  }
 
 

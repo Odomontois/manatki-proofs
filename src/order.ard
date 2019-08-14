@@ -60,4 +60,10 @@
     (join-univ _ _ _ (join-left _ _ ~*> join-comm' _ _) (join-right _ _))
 }
 
+\lemma meet-comm {E : \Set} {po : MeetSemilattice E}(x y : E) : meet x y = meet y x =>
+  <=-antisymmetric (meet x y) (meet y x)
+                   (meet-univ x y (meet y x) (meet-right y x) (meet-left y x))
+                   (meet-univ y x (meet x y) (meet-right x y) (meet-left x y))
+
+
 
