@@ -34,15 +34,15 @@
 
 \func orb (b1 : bool) (b2 : bool) : bool \elim b1
   | true => true
-  | false => b2
+  | false => b2 \where {
+  \lemma test1 : orb true  false = true => idp
 
-\lemma test_orb1 : orb true  false = true => idp
+  \lemma test2 : orb false false = false => idp
 
-\lemma test_orb2 : orb false false = false => idp
+  \lemma test3 : orb false true = true => idp
 
-\lemma test_orb3 : orb false true = true => idp
-
-\lemma test_orb4 : orb true  true = true => idp
+  \lemma test4 : orb true  true = true => idp
+}
 
 \func \infixl 6 && => andb
 
@@ -50,25 +50,29 @@
 
 \lemma test_orb5 :  false || false || true = true => idp
 
-\func nandb ( b1 : bool) ( b2 : bool) : bool => negb ( b1 && b2 )
+\func nandb ( b1 : bool) ( b2 : bool) : bool => negb ( b1 && b2 ) \where{
+  \lemma test1 : nandb true false = true => idp
 
-\lemma test_nandb1 : nandb true false = true => idp
+  \lemma test2 : nandb false false = true => idp
 
-\lemma test_nandb2 : nandb false false = true => idp
+  \lemma test3 : nandb false true = true => idp
 
-\lemma test_nandb3 : nandb false true = true => idp
+  \lemma test4 : nandb true true = false => idp
+}
 
-\lemma test_nandb4 : nandb true true = false => idp
+\func andb3 (b1 : bool) (b2 : bool) (b3 : bool) : bool => b1 && b2 && b3 \where{
+  \lemma test1 :                 andb3 true true true = true => idp
 
-\func andb3 (b1 : bool) (b2 : bool) (b3 : bool) : bool => b1 && b2 && b3
+  \lemma test2 :                 andb3 false true true = false => idp
 
-\lemma test_andb31 :                 andb3 true true true = true => idp
+  \lemma test3 :                 andb3 true false true = false => idp
 
-\lemma test_andb32 :                 andb3 false true true = false => idp
+  \lemma test4 :                 andb3 true true false = false => idp
+}
 
-\lemma test_andb33 :                 andb3 true false true = false => idp
-
-\lemma test_andb34 :                 andb3 true true false = false => idp
+\func ifb { A : \Type } (x : bool) (t f : A) : A \elim x
+  | true => t
+  | false => f
 
 \data rgb
   | red
@@ -128,11 +132,11 @@
   | 1     => false
   | suc (suc n') => evenb n'
 
-\func oddb (n : Nat) : bool => negb (evenb n)
+\func oddb (n : Nat) : bool => negb (evenb n) \where{
+  \lemma test1 :    oddb 1 = true => idp
 
-\lemma test_oddb1 :    oddb 1 = true => idp
-
-\lemma test_oddb2 :    oddb 4 = false => idp
+  \lemma test2 :    oddb 4 = false => idp
+}
 
 \module NatPlayground2 \where {
   \func plus (n : Nat) (m : Nat) : Nat \elim n
@@ -217,16 +221,16 @@
     | no ne => no (\lam p => ne (NatLE.unsuc p) )
   }
 
-\func leb (n m : Nat) => dec2bool (n ?<= m)
+\func leb (n m : Nat) => dec2bool (n ?<= m) \where {
+  \lemma test1 : leb 2 2 = true => idp
+
+  \lemma test2 : leb 2 4 = true => idp
+
+  \lemma test3 : leb 4 2 = false => idp
+}
 
 \instance natDecidable<= {n m : Nat} : Decide (n <= m)
   | decide => n ?<= m
-
-\lemma test_led1 : leb 2 2 = true => idp
-
-\lemma test_leb2 : leb 2 4 = true => idp
-
-\lemma test_leb3 : leb 4 2 = false => idp
 
 \func \infix 5 =? => eqb
 
@@ -247,13 +251,13 @@
   }
 }
 
-\func \infix 5 <? (x y : Nat) => dec2bool (x ?< y)
+\func \infix 5 <? (x y : Nat) => dec2bool (x ?< y) \where{
+  \lemma test1 :  2 <? 2 = false => idp
 
-\lemma test_ltb1 :  2 <? 2 = false => idp
+  \lemma test2 : 2 <? 4 = true => idp
 
-\lemma test_ltb2 : 2 <? 4 = true => idp
-
-\lemma test_ltb3 :  4 <? 2 = false => idp
+  \lemma test3 :  4 <? 2 = false => idp
+}
 
 \lemma  plus_O_n  (n : Nat) : n + 0 = n => idp
 
@@ -317,8 +321,6 @@
   | true, false => inv
   | false, true => id
   | false, false => id
-
-
 
 \import Equiv
 \import Set.Fin

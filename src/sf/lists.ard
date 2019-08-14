@@ -1,4 +1,108 @@
-\data natprod | pair Nat Nat
+\import Paths
+\import sf.basics
+\import sf.induction
+\import Function
+\open Nat (+)
+
+\func natprod => \Sigma  Nat Nat
+
+\func fst (p : natprod) : Nat
+  | (x, y) => x
+
+\func snd (p : natprod) : Nat
+  |  (x, y) => y
+
+\func swap_pair (p : natprod) : natprod
+  | (x, y) => (y, x)
+
+\func minus (n m : Nat) : Nat
+  | 0   , _       => 0
+  | n, 0          => n
+  | suc n, suc m  => minus n m
+
+\lemma surjective_pairing' (n m : Nat):  (n,m) = (fst (n,m), snd (n,m)) => idp
+
+\lemma surjective_pairing (p : natprod) : p = (fst p, snd p) => idp
+
+\lemma snd_fst_is_swap (p : natprod): (snd p, fst p) = swap_pair p => idp
+
+\lemma fst_swap_is_snd (p : natprod) : fst (swap_pair p) = snd p => idp
+
+\data natlist : \Set
+  | nil
+  | \infixr 5 :: (n : Nat) (l : natlist)
+
+\func repeat (n count : Nat) : natlist \elim count
+  | 0 => nil
+  | suc count => n :: (repeat n count)
+
+\func length (l : natlist) : Nat \elim l
+  | nil => 0
+  | :: _ t => suc (length t)
+
+\func \infixl 6 ++ (l1 l2 : natlist) : natlist \elim l1
+  | nil => l2
+  | :: h t => h :: (t ++ l2)
+
+\func hd (default : Nat) (l : natlist) : Nat \elim l
+  | nil => default
+  | :: h t => h
+
+\func tl (l : natlist) : natlist \elim l
+  | nil => nil
+  | :: _ t => t
+
+\func \fixr 9 ] ( a : Nat) => a :: nil
+
+\func \fixl 7  [ {A : \Type} (f : natlist -> A) (xs : natlist) => f xs
+
+\func nonzeros (l : natlist) : natlist
+  | nil => nil
+  | :: 0 t => nonzeros t
+  | :: a t => a :: nonzeros t
+  \where{
+    \lemma test :  nonzeros (0 :: 1 :: 0 :: 2 :: 3 :: 0 :: 0]) = (1 :: 2 :: 3 :: nil) => idp
+  }
+
+\func oddmembers (l : natlist) : natlist
+  | nil => nil
+  | :: n t => ifb (oddb n) (n :: oddmembers t) (oddmembers t) \where {
+  \lemma test : oddmembers (0 :: 1 :: 0 :: 2 :: 3 :: 0 :: 0 ]) = 1 :: 3 :: nil => idp
+}
+
+\func  countoddmembers => length o oddmembers
+  \where {
+    \lemma test : countoddmembers (1 :: 0 :: 3 :: 1 :: 4 :: 5 :: nil) = 4 => idp
+
+    \lemma test2 : countoddmembers (0 :: 2 :: 4 :: nil)  = 0 => idp
+
+    \lemma test3 :  countoddmembers nil = 0 => idp
+  }
+
+\func alternate (l1 l2 : natlist) : natlist
+  | nil, l => l
+  | l, nil => l
+  | :: a1 t1, :: a2 t2 => a1 :: a2 :: alternate t1 t2
+  \where {
+    \lemma test1 : alternate (1 :: 2 :: 3 :: nil) (4 :: 5 :: 6 :: nil) = (1 :: 4 :: 2 :: 5 :: 3 :: 6 :: nil) => idp
+
+    \lemma test2 : alternate (1 :: nil) (4 :: 5 :: 6 :: nil) = (1 :: 4 :: 5 :: 6 :: nil) => idp
+
+    \lemma test3 : alternate (1 :: 2 :: 3 :: nil) (4 :: nil) = (1 :: 4 :: 2 :: 3 :: nil) => idp
+
+    \lemma test4 : alternate nil (20 :: 30 :: nil) = (20 :: 30 :: nil) => idp
+  }
+
+\func bag => natlist
+
+\func count (v : Nat) (s : bag) : Nat \elim s
+  | nil => 0
+  | :: a t => count v t + ifb (eqb a v) 0 1
+  \where [1;2;3;1;4;1 :n nil)
+
+
+
+
 
 
 
