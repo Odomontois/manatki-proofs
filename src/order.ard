@@ -48,6 +48,9 @@
 
 \open JoinSemilattice
 
+\lemma join<=meet {A : \Set} {l : Lattice A} (a b : A) : join a b <= meet a b =>
+  join-left _ _ ~*> meet-left _ _
+
 \lemma join-swap2 {A : \Set} {po : JoinSemilattice A} (a b c : A) : join (join a b) c = join (join b a) c =>
   <=-antisymmetric _ _ (join-swap' _ _ _) (join-swap' _ _ _) \where {
   \lemma join-comm' {A : \Set }{po : JoinSemilattice A} (a b : A) : join a b <= join b a =>
