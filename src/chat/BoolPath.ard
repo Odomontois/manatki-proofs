@@ -1,0 +1,12 @@
+\import Data.Bool
+\import Equiv (QEquiv)
+\import Equiv.Univalence
+\import Paths
+
+\lemma not-involutive (b : Bool) : not (not b) = b
+  | true => idp
+  | false => idp
+
+\func boolInv : Bool = Bool => QEquiv-to-= (\new QEquiv not not not-involutive not-involutive)
+
+\lemma omg : Path (@ boolInv) true false => path (coe (@ boolInv) true)

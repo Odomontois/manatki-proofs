@@ -65,5 +65,18 @@
                    (meet-univ x y (meet y x) (meet-right y x) (meet-left y x))
                    (meet-univ y x (meet x y) (meet-right x y) (meet-left x y))
 
+\lemma meet-assoc {E : MeetSemilattice} (x y z : E) : meet (meet x y) z = meet x (meet y z) =>
+  <=-antisymmetric _ _
+                   (meet-univ _ _ _ (meet-univ _ _ _ (meet-left _ _) (meet-left y z ~*> meet-right _ _)) (meet-right y z ~*> meet-right _ _))
+                   (meet-univ _ _ _ (meet-left x y ~*> meet-left _ _) (meet-univ _ _ _ (meet-right x y ~*> meet-left _ _ ) (meet-right _ _)))
+
+\lemma meet-idemp {E : MeetSemilattice} (x y z : E) : meet x x = x =>
+  <=-antisymmetric _ _ (meet-univ _ _ _ (<=-reflexive x) (<=-reflexive x)) (meet-left x x)
+
+\lemma join-semi-ditrib {E : Lattice} (x y z : E) : meet x (join y z) <= join (meet x y) (meet x z) =>
+  meet-univ _ _ _
+            (join-univ _ _ _ (meet-left x y) (meet-left x z))
+            (join-univ _ _ _ (join-left y z ~*> meet-right x y) (join-right y z ~*> meet-right x z))
+
 
 
