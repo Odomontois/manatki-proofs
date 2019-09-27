@@ -61,22 +61,24 @@
 }
 
 \lemma meet-comm {E : \Set} {po : MeetSemilattice E}(x y : E) : meet x y = meet y x =>
-  <=-antisymmetric (meet x y) (meet y x)
-                   (meet-univ x y (meet y x) (meet-right y x) (meet-left y x))
-                   (meet-univ y x (meet x y) (meet-right x y) (meet-left x y))
-
-\lemma meet-assoc {E : MeetSemilattice} (x y z : E) : meet (meet x y) z = meet x (meet y z) =>
   <=-antisymmetric _ _
-                   (meet-univ _ _ _ (meet-univ _ _ _ (meet-left _ _) (meet-left y z ~*> meet-right _ _)) (meet-right y z ~*> meet-right _ _))
-                   (meet-univ _ _ _ (meet-left x y ~*> meet-left _ _) (meet-univ _ _ _ (meet-right x y ~*> meet-left _ _ ) (meet-right _ _)))
+                   (meet-univ _ _ _ (meet-right y x) (meet-left y x))
+                   (meet-univ _ _ _ (meet-right x y) (meet-left x y))
 
-\lemma meet-idemp {E : MeetSemilattice} (x y z : E) : meet x x = x =>
-  <=-antisymmetric _ _ (meet-univ _ _ _ (<=-reflexive x) (<=-reflexive x)) (meet-left x x)
+\lemma meet-idemp {E : \Set} {po : MeetSemilattice E} (x : E) : meet x x = x =>
+  <=-antisymmetric _ _  (meet-univ x x x (<=-reflexive x) (<=-reflexive x)) (meet-left x x)
 
-\lemma join-semi-ditrib {E : Lattice} (x y z : E) : meet x (join y z) <= join (meet x y) (meet x z) =>
-  meet-univ _ _ _
-            (join-univ _ _ _ (meet-left x y) (meet-left x z))
-            (join-univ _ _ _ (join-left y z ~*> meet-right x y) (join-right y z ~*> meet-right x z))
+\lemma meet-assoc {E : \Set} {po : MeetSemilattice E}  (x y z : E) : meet (meet x y) z = meet x (meet y z) =>
+  <=-antisymmetric _ _
+                   (meet-univ _ _ _ (meet-univ _ _ _ (meet-left _ _) (meet-left y z ~*> meet-right _ _)) (meet-right y z ~*> meet-right _ _) )
+                   (meet-univ _ _ _ (meet-left x y ~*> meet-left _ _) (meet-univ _ _ _ (meet-right x y ~*> meet-left _ _) (meet-right _ _)))
 
+\lemma meet<=  {E : \Set} {po : MeetSemilattice E} (x y : E) (x<=y : x <= y) : meet x y = y =>
+  <=-antisymmetric _ _ (meet-univ _ _ _ x<=y (<=-reflexive _)) (meet-right x y)
+
+\lemma join-semi-distrib {E : \Set} {po : Lattice E} (x y z : E) : meet (join x y) (join x z) <= join x (meet y z)  =>
+   meet-univ _ _ _
+             (join-univ _ _ _ (join-left x y) (join-right x y ~*> meet-left y z))
+             (join-univ _ _ _ (join-left x z) (join-right x z ~*> meet-right y z))
 
 

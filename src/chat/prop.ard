@@ -1,0 +1,23 @@
+\import Equiv
+\import HLevel
+\import Paths
+\import Set
+
+\func setPath= {A : \Type} (R : A -> A -> \Prop)
+               (refl : \Pi (a : A) -> R a a) (to= : \Pi {a a' : A} -> R a a' -> a = a')
+               {a a' : A} (p q : a = a') : p = q =>
+  \let eqq : QEquiv {a = a'} {R a a'} => Hedberg.propPathEquiv R refl to=
+  \in inv (eqq.ret_f p) *> pmap eqq.ret (Path.inProp _ _) *> eqq.ret_f q
+
+\data AB
+  | A
+  | B
+  | a=b I \with{
+    | left => A
+    | right => B
+  }
+
+
+\func propeq {A : \Type} (aprop : isProp A) {a a' : A} : isProp (a = a') =>
+  \lam p q => Jl (\lam a'' p => {?})
+}
