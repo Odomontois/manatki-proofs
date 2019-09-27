@@ -39,46 +39,46 @@
 
 \open LinearOrder.Dec (=>TotalOrder)
 
-\func max {A : \Set} {xo : LinearOrder.Dec A} (a a' : A) : A => meet {=>TotalOrder} a a'
+\func max {A  : LinearOrder.Dec} (a a' : A) : A => meet {=>TotalOrder} a a'
 
-\func min {A : \Set} {xo : LinearOrder.Dec A} (a a' : A) : A => join {=>TotalOrder} a a'
+\func min {A : LinearOrder.Dec } (a a' : A) : A => join {=>TotalOrder} a a'
 
-\func \infixl 4 ~*> {A : \Set} {po : Preorder A} {a b c : A} (ie1 : a <= b) (ie2 : b <= c) : a <= c =>
+\func \infixl 4 ~*> {A  : Preorder} {a b c : A} (ie1 : a <= b) (ie2 : b <= c) : a <= c =>
   <=-transitive a b c ie1 ie2
 
 \open JoinSemilattice
 
-\lemma join<=meet {A : \Set} {l : Lattice A} (a b : A) : join a b <= meet a b =>
+\lemma join<=meet {A : Lattice} (a b : A) : join a b <= meet a b =>
   join-left _ _ ~*> meet-left _ _
 
-\lemma join-swap2 {A : \Set} {po : JoinSemilattice A} (a b c : A) : join (join a b) c = join (join b a) c =>
+\lemma join-swap2 {A : JoinSemilattice } (a b c : A) : join (join a b) c = join (join b a) c =>
   <=-antisymmetric _ _ (join-swap' _ _ _) (join-swap' _ _ _) \where {
-  \lemma join-comm' {A : \Set }{po : JoinSemilattice A} (a b : A) : join a b <= join b a =>
+  \lemma join-comm' {A : JoinSemilattice} (a b : A) : join a b <= join b a =>
     coe (\lam i => join a b <= join-comm a b @ i ) (<=-reflexive _) right
 
-  \lemma join-swap' {A : \Set} {po : JoinSemilattice A} (a b c : A) : join (join a b) c <= join (join b a) c =>
+  \lemma join-swap' {A : JoinSemilattice} (a b c : A) : join (join a b) c <= join (join b a) c =>
     (join-univ _ _ _ (join-left _ _ ~*> join-comm' _ _) (join-right _ _))
 }
 
-\lemma meet-comm {E : \Set} {po : MeetSemilattice E}(x y : E) : meet x y = meet y x =>
+\lemma meet-comm {E : MeetSemilattice}(x y : E) : meet x y = meet y x =>
   <=-antisymmetric _ _
                    (meet-univ _ _ _ (meet-right y x) (meet-left y x))
                    (meet-univ _ _ _ (meet-right x y) (meet-left x y))
 
-\lemma meet-idemp {E : \Set} {po : MeetSemilattice E} (x : E) : meet x x = x =>
+\lemma meet-idemp {E : MeetSemilattice} (x : E) : meet x x = x =>
   <=-antisymmetric _ _  (meet-univ x x x (<=-reflexive x) (<=-reflexive x)) (meet-left x x)
 
-\lemma meet-assoc {E : \Set} {po : MeetSemilattice E}  (x y z : E) : meet (meet x y) z = meet x (meet y z) =>
+\lemma meet-assoc {E : MeetSemilattice}  (x y z : E) : meet (meet x y) z = meet x (meet y z) =>
   <=-antisymmetric _ _
                    (meet-univ _ _ _ (meet-univ _ _ _ (meet-left _ _) (meet-left y z ~*> meet-right _ _)) (meet-right y z ~*> meet-right _ _) )
                    (meet-univ _ _ _ (meet-left x y ~*> meet-left _ _) (meet-univ _ _ _ (meet-right x y ~*> meet-left _ _) (meet-right _ _)))
 
-\lemma meet<=  {E : \Set} {po : MeetSemilattice E} (x y : E) (x<=y : x <= y) : meet x y = y =>
+\lemma meet<=  {E : MeetSemilattice} (x y : E) (x<=y : x <= y) : meet x y = y =>
   <=-antisymmetric _ _ (meet-univ _ _ _ x<=y (<=-reflexive _)) (meet-right x y)
 
-\lemma join-semi-distrib {E : \Set} {po : Lattice E} (x y z : E) : meet (join x y) (join x z) <= join x (meet y z)  =>
-   meet-univ _ _ _
-             (join-univ _ _ _ (join-left x y) (join-right x y ~*> meet-left y z))
-             (join-univ _ _ _ (join-left x z) (join-right x z ~*> meet-right y z))
+\lemma join-semi-distrib {E : Lattice} (x y z : E) : meet (join x y) (join x z) <= join x (meet y z) =>
+  meet-univ _ _ _
+            (join-univ _ _ _ (join-left x y) (join-right x y ~*> meet-left y z))
+            (join-univ _ _ _ (join-left x z) (join-right x z ~*> meet-right y z))
 
 
