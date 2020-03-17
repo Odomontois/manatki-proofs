@@ -1,4 +1,5 @@
 \import Data.Bool
+\import Equiv
 \import Paths
 \import Set
 \import Function
@@ -24,24 +25,20 @@
     | no n => no (\lam e => n (pmap (\lam s => s.1) e))
     | yes e1 => decEq2 s1.1 s2.1 B BD e1 s1.2 s2.2
   } \where {
-  \func decEq2 {A : \Set} (a1 a2 : A) (B : A -> \Set) (BD : \Pi (a : A) -> DecEq (B a)) (e : a1 = a2) (b1 : B a1)
+  \lemma decEq2 {A : \Set} (a1 a2 : A) (B : A -> \Set) (BD : \Pi (a : A) -> DecEq (B a)) (e : a1 = a2) (b1 : B a1)
     : \Pi (b2 : B a2) ->  Dec ((a1, b1) = {\Sigma (a : A) (B a)} (a2, b2)) \elim e
     | idp => decEq2a a1 B BD b1
 
-  \func decEq2a {A : \Set} (a : A) (B : A -> \Set) (BD : \Pi (a : A) -> DecEq (B a))(b1 b2 : B a)
+  \lemma decEq2a {A : \Set} (a : A) (B : A -> \Set) (BD : \Pi (a : A) -> DecEq (B a))(b1 b2 : B a)
     : Dec ((a, b1) = {\Sigma (a : A) (B a)} (a, b2)) =>
     \case == {BD a} b1 b2 \with{
       | no n => no (\lam e => n (sigmaSecond a B b1 b2 e))
       | yes e => yes (path (\lam i => (a, e @ i)))
     }
 
-  \func sigmaSecond {A : \Set} (a : A) (B : A -> \Set) (b1 b2 : B a) (p : (a, b1) = {\Sigma  (a' : A) (B a')} (a , b2)): b1 = b2 =>
-    \case (sigmaEq B p) \with {
+  \lemma sigmaSecond {A : \Set} (a : A) (B : A -> \Set) (b1 b2 : B a) (p : (a, b1) = {\Sigma  (a' : A) (B a')} (a , b2)): b1 = b2 =>
+    \case (Equiv.f {sigmaEquiv B _ _} p) \with {
       | (p', r) => transport (\lam p => transport B p b1 = b2) (Path.inProp {a = a} p' idp) r
     }
-
-  \func sigmaEq {A : \Type} (B : A -> \Type) {w1 w2 : \Sigma (a : A) (B a)} (e : w1 = w2)
-    : \Sigma (p : w1.1 = w2.1) (transport B p w1.2 = w2.2) \elim e
-    | idp => (idp, idp)
 }
 
