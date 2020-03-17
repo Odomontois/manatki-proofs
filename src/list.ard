@@ -1,3 +1,4 @@
+\import HLevel
 \import Logic
 \import Logic
 \import Paths
@@ -74,19 +75,15 @@
 }
 
 
+  \data Elem {A : \Type} (e : A) (l : List A) \elim l
+    | :: h t => Here (e = h)
+    | :: h t => There (Elem e t) \where {
+    \func no-nil {A B : \Type} (a : A) (eq : Elem a nil) : B
 
+    \func here!=there {A B : \Type} (e h : A) (t : List A) (el : Elem e t)
+                      (eq : e = h) (p : Here eq = There el )  : B =>
+      coe (\lam i => \case p @ i \with { Here _ => \Sigma | There _ => B }) () right
 
-
-
-  \data Elem {A : \Type} (e : A) (l : List A)
-    | Here (t : List A) (eq : e :: t = l)
-    | There (h : A) (t : List A) (elem : Elem e t) (eq : h :: t = l) \where {
-    \func here!=there {A B : \Type} (e h : A) (l t1 t2 : List A) (el : Elem e t2)
-                      (eq1 : e :: t1 = l) (eq2 : h :: t2 = l)
-                      (p : Here t1 eq1 = There h t2 el eq2 )  : B =>
-      coe (\lam i => \case p @ i \with { Here _ _ => \Sigma | There _ _ _ _  => B }) () right
-
-    \func tail-elem {A : \Type} (e h : A) (l : List A) (elem : Elem e l) : Elem e (h :: l) => There h l elem idp
   }
 
 

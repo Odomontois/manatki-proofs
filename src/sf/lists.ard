@@ -115,7 +115,7 @@
       \lemma test2 : count 5 (add 1 (1 :: 3 :: 1 :: nil)) = 0 => idp
     }
 
-    \func member (v : Nat) (s : bag) : bool => ( count v s)
+--     \func member (v : Nat) (s : bag) : bool => (count v s)
   }
 
 

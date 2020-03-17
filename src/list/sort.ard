@@ -8,11 +8,11 @@
 \open Nat
 \open List (discriminate, ::-injective)
 
-\data ListIsOrdered {A : \Set} {po : Poset A} (l : List A) \with
+\data ListIsOrdered {A : Poset} (l : List A) : \Prop \with
   | nil => ord-nil
   | :: a nil =>  ord-single
   | :: a (:: b t) => ord-cons (a <= b) (ListIsOrdered (b :: t)) \where {
-  \use \level orderedList-is-prop {A : \Set} {po : Poset A} {l : List A} (o1 o2 : ListIsOrdered l) : o1 = o2 \elim l, o1, o2
+  \use \level orderedList-is-prop {A : Poset} {l : List A} (o1 o2 : ListIsOrdered l) : o1 = o2 \elim l, o1, o2
     | nil, ord-nil , ord-nil =>  idp
     | :: _ nil, ord-single, ord-single => idp
     | :: a (:: b t), ord-cons p1 next1, ord-cons p2 next2 => pmap2 ord-cons (Path.inProp _ _) (Path.inProp _ _)
