@@ -25,11 +25,12 @@
     \let se : QEquiv => sigmaEquiv B s1 s2
     \in \case s1.1 == s2.1 \with {
       | no n => no (\lam e => n (pmap (\lam s => s.1) e))
-      | yes e1 => \case (transport B e1 s1.2 == {BD s2.1} s2.2) \with {
+      | yes e1 => \case transport B e1 s1.2 == {BD s2.1} s2.2 \with {
         | yes e2 => yes (se.ret (e1, e2))
-        | no n => no (\lam e => \case se.f e \with {
-          | (p1, p2) => n (transport (\lam p => transport B p s1.2 = s2.2) (Path.inProp {s1.1 = s2.1} p1 e1) p2 )
-        })
+        | no n => no (\lam e => n (
+          \let eqs => se.f e
+          \in transport (\lam p => transport B p s1.2 = s2.2)
+                        (Path.inProp {s1.1 = s2.1} eqs.1 e1) eqs.2))
       }
     }
 

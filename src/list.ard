@@ -1,14 +1,15 @@
+\import DecEq
 \import HLevel
 \import Logic
 \import Logic
 \import Paths
 \import monoid
 \import order
-\import sets
 \import Function
 \import Order.LinearOrder
 \import Order.PartialOrder
 \import Order.Lattice
+\import Set
 
 \data List (A : \Type)
   | nil
@@ -38,7 +39,7 @@
 
     }
 
-  \func length {A : \Type } (l : List A) : Nat
+  \func length {A : \Type} (l : List A) : Nat
     | nil => Nat.zero
     | :: _ t => suc (length t)
 
@@ -54,36 +55,56 @@
     | nil => idp
     | (:: h la') => pmap (:: h) (assoc la' lb lc)
 
-  \instance listMonoid {A : \Set}: Monoid (List A)
-    | empty => nil
-    | |+| => List.++
-    | left_empty a => idp
-    | right_empty => List.++nil
-    | assoc  => List.assoc
-
   \open TotalOrder (totality)
   \open || (byLeft, byRight)
   \open JoinSemilattice (join-comm)
 
   \func minimum {A : \Set} {sa : JoinSemilattice A} (a : A) (as : List A) : A \elim as
     | nil => a
-    | :: a' tail =>  minimum (join a a') tail
+    | :: a' tail => minimum (join a a') tail
     \where {
       \lemma unordered {A : \Set} {to : JoinSemilattice A} (a a' : A) (as : List A) :
         minimum a (a' :: as) = minimum a' (a :: as) => pmap (\lam x => minimum x as) (join-comm _ _)
     }
 }
 
+\instance listMonoid {A : \Set}: Monoid (List A)
+  | empty => nil
+  | |+| => List.++
+  | left_empty a => idp
+  | right_empty => List.++nil
+  | assoc  => List.assoc
 
-  \data Elem {A : \Type} (e : A) (l : List A) \elim l
-    | :: h t => Here (e = h)
-    | :: h t => There (Elem e t) \where {
-    \func no-nil {A B : \Type} (a : A) (eq : Elem a nil) : B
+\instance listDecEq {A : DecEq}: DecEq (List A)
+  | == => impl \where {
+  \lemma impl {A : DecEq} (a b : List A) : Dec (a = b) \elim a, b
+    | nil, nil => yes (idp)
+    | nil, :: _ _ => no List.discriminate
+    | :: _ _, nil => no (List.discriminate o inv)
+    | :: ha ta, :: hb tb => \case ha == hb \with {
+      | no n => no (\lam e => n (pmap (List.head ha) e))
+      | yes eh => \case impl ta tb \with {
+        | no n => no (\lam e => n (pmap List.tail e))
+        | yes et => yes (pmap2 (::) eh et)
+      }
+    }
+}
 
-    \func here!=there {A B : \Type} (e h : A) (t : List A) (el : Elem e t)
-                      (eq : e = h) (p : Here eq = There el )  : B =>
-      coe (\lam i => \case p @ i \with { Here _ => \Sigma | There _ => B }) () right
+\data Elem {A : \Type} (e : A) (l : List A) \elim l
+  | :: h t => Here (e = h)
+  | :: h t => There (Elem e t) \where {
+  \func no-nil {A B : \Type} (a : A) (eq : Elem a nil) : B
 
-  }
+  \func here!=there {A B : \Type} (e h : A) (t : List A) (el : Elem e t)
+                    (eq : e = h) (p : Here eq = There el)  : B =>
+    coe (\lam i => \case p @ i \with {
+    Here _ => \Sigma | There _ => B
+    }) () right
+}
+
+\instance elemDecEq {A : \Set} {e : A} {l : List A} : DecEq (Elem e l)
+  | == => {?}
+
+
 
 
