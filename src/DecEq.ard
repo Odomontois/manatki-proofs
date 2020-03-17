@@ -25,32 +25,23 @@
     | yes e1 => decEq2 s1.1 s2.1 B BD e1 s1.2 s2.2
   } \where {
   \func decEq2 {A : \Set} (a1 a2 : A) (B : A -> \Set) (BD : \Pi (a : A) -> DecEq (B a)) (e : a1 = a2) (b1 : B a1)
-    : \Pi (b2 : B a2) ->  Dec ((a1, b1) = {\Sigma (a : A) (B a)} (a2, b2)) =>
-    Jl (\lam a' eq => \Pi (b' : B a') -> Dec ((a1, b1) = {\Sigma (a : A) (B a)} (a', b'))) (decEq2a a1 B BD b1) e
+    : \Pi (b2 : B a2) ->  Dec ((a1, b1) = {\Sigma (a : A) (B a)} (a2, b2)) \elim e
+    | idp => decEq2a a1 B BD b1
 
   \func decEq2a {A : \Set} (a : A) (B : A -> \Set) (BD : \Pi (a : A) -> DecEq (B a))(b1 b2 : B a)
     : Dec ((a, b1) = {\Sigma (a : A) (B a)} (a, b2)) =>
     \case == {BD a} b1 b2 \with{
-      | no n => no (\lam e => {?})
-      | yes e => {?}
+      | no n => no (\lam e => n (sigmaSecond a B b1 b2 e))
+      | yes e => yes (path (\lam i => (a, e @ i)))
     }
 
   \func sigmaSecond {A : \Set} (a : A) (B : A -> \Set) (b1 b2 : B a) (p : (a, b1) = {\Sigma  (a' : A) (B a')} (a , b2)): b1 = b2 =>
-    \let | T => \Sigma (a' : A) (B a')
-         | s1 : T => (a, b1)
-         | s2 : T => (a, b2)
-         | q  : s1 = {T} s2 => p
-         | p' : a = a => pmap (\lam t => t.1) q
-         | r : transport B p' b1 = b2 => {?}
-         | p'=idp : p' = idp => Path.inProp {a = a} p' idp
-    \in transport (\lam p => transport B p b1 = b2) p'=idp r
+    \case (sigmaEq B p) \with {
+      | (p', r) => transport (\lam p => transport B p b1 = b2) (Path.inProp {a = a} p' idp) r
+    }
 
-  \func sigmaEq2 {A : \Set} (B : A -> \Set) {w1 w2 : \Sigma (a : A) (B a)} (e : w1 = w2)
+  \func sigmaEq {A : \Type} (B : A -> \Type) {w1 w2 : \Sigma (a : A) (B a)} (e : w1 = w2)
     : \Sigma (p : w1.1 = w2.1) (transport B p w1.2 = w2.2) \elim e
     | idp => (idp, idp)
-
-  \func sigmaEq {A : \Set} (B : A -> \Set) {w1 w2 : \Sigma (a : A) (B a)} (e : w1 = w2)
-    : \Sigma (p : w1.1 = w2.1) (transport B p w1.2 = w2.2) =>
-    Jl {\Sigma (a : A) (B a)} {w1} (\lam w' e => \Sigma (p : w1.1 = w'.1) (transport B p w1.2 = w'.2)) ((idp, idp)) {w2} e
 }
 
