@@ -102,8 +102,10 @@
     }) () right
 }
 
-\instance elemDecEq {A : \Set} {e : A} {l : List A} : DecEq (Elem e l)
-  | == => {?}
+\instance elemDecEq {A : DecEq} {e : A} {l : List A} : DecEq (Elem e l)
+  | == => impl \where {
+  \func impl {A : DecEq} {e : A} {l : List A} (a b : Elem e l) : Dec (a = b) \elim l, a, b
+}
 
 
 
