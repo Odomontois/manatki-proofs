@@ -87,38 +87,45 @@
     }
 }
 
-\data Elem {A : \Type} (e : A) (l : List A) \elim l
+\data Index {A : \Type} (e : A) (l : List A) \elim l
   | :: h t => Here (e = h)
-  | :: h t => There (Elem e t) \where {
-  \func no-nil {A B : \Type} (a : A) (eq : Elem a nil) : B
+  | :: h t => There (Index e t) \where {
+  \func no-nil {A B : \Type} (a : A) (eq : Index a nil) : B
 
   \func here!=there {A B : \Type} {e h : A} {t : List A}
-                    {el : Elem e t} {eq : e = h}
+                    {el : Index e t} {eq : e = h}
                     (p : Here eq = There el)  : B =>
     coe (\lam i => \case p @ i \with {
     Here _ => \Sigma | There _ => B
     }) () right
 
   \func there-injective {A : \Type} {a h : A} {l : List A}
-                        {e1 e2 : Elem a l} (p : There {_} {_} {h} e1 = There e2) : e1 = e2 =>
-    \let f (e : Elem a (h :: l)) : Elem a l => \case e \with {
+                        {e1 e2 : Index a l} (p : There {_} {_} {h} e1 = There e2) : e1 = e2 =>
+    \let f (e : Index a (h :: l)) : Index a l => \case e \with {
       | Here _ => e1
       | There e' => e'
     }
     \in pmap f p
 }
 
-\instance elemDecEq {A : DecEq} {e : A} {l : List A} : DecEq (Elem e l)
+\instance elemDecEq {A : DecEq} {e : A} {l : List A} : DecEq (Index e l)
   | == => impl \where {
-  \lemma impl {A : DecEq} {e : A} {l : List A} (a b : Elem e l) : Dec (a = b) \elim l, a, b
+  \lemma impl {A : DecEq} {e : A} {l : List A} (a b : Index e l) : Dec (a = b) \elim l, a, b
     | :: a tail, Here p1, Here p2 => yes (pmap Here (Path.inProp {e = a} p1 p2))
-    | :: a tail, Here =, There e => no Elem.here!=there
-    | :: a tail, There e, Here = => no (Elem.here!=there o inv)
+    | :: a tail, Here =, There e => no Index.here!=there
+    | :: a tail, There e, Here = => no (Index.here!=there o inv)
     | :: a tail, There e1, There e2 => \case impl e1 e2 \with {
       | yes p => yes (pmap There p)
-      | no n => no (n o Elem.there-injective)
+      | no n => no (n  o Index.there-injective)
     }
 }
+
+\func Elem {A : \Type} (e : A) (l : List A) => TruncP (Index e l) \where {
+  \cons here {A : \Type} {a h : A} {l : List A} (p : a = h) : Elem a (h :: l) => TruncP.inP (Index.Here p)
+  \cons there {A : \Type} {a h : A} {l : List A} (e : Index a l) : Elem a (h :: l) => TruncP.inP (Index.There e)
+}
+
+
 
 
 
