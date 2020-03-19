@@ -72,13 +72,13 @@
   | right_empty => List.++nil
   | assoc  => List.assoc
 
-\instance listDecEq {A : DecEq}: DecEq (List A)
-  | == => impl \where {
-  \lemma impl {A : DecEq} (a b : List A) : Dec (a = b) \elim a, b
+\instance listDecEq {A : DecSet}: DecSet.Impl (List A)
+  | decideEq => impl \where {
+  \lemma impl {A : DecSet} (a b : List A) : Dec (a = b) \elim a, b
     | nil, nil => yes (idp)
     | nil, :: _ _ => no List.discriminate
     | :: _ _, nil => no (List.discriminate o inv)
-    | :: ha ta, :: hb tb => \case ha == hb \with {
+    | :: ha ta, :: hb tb => \case ha `decideEq` hb \with {
       | no n => no (\lam e => n (pmap (List.head ha) e))
       | yes eh => \case impl ta tb \with {
         | no n => no (\lam e => n (pmap List.tail e))
@@ -108,9 +108,9 @@
     \in pmap f p
 }
 
-\instance elemDecEq {A : DecEq} {e : A} {l : List A} : DecEq (Index e l)
-  | == => impl \where {
-  \lemma impl {A : DecEq} {e : A} {l : List A} (a b : Index e l) : Dec (a = b) \elim l, a, b
+\instance elemDecEq {A : DecSet} {e : A} {l : List A} : DecSet.Impl (Index e l)
+  | decideEq => impl \where {
+  \lemma impl {A : DecSet} {e : A} {l : List A} (a b : Index e l) : Dec (a = b) \elim l, a, b
     | :: a tail, Here p1, Here p2 => yes (pmap Here (Path.inProp {e = a} p1 p2))
     | :: a tail, Here =, There e => no Index.here!=there
     | :: a tail, There e, Here = => no (Index.here!=there o inv)

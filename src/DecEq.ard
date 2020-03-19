@@ -1,31 +1,31 @@
 \import Data.Bool
 \import Equiv
+\import Logic
 \import Paths
 \import Set
 \import Function
+\import Arith.Nat
 
-\class DecEq (A : \Set)
-  | \infix 2 == (a b : A) : Dec (a = b)
-
-\instance decEqBool : DecEq Bool
-  | == => impl
+\instance decSetBool : DecSet.Impl Bool
+  | decideEq => impl
   \where {
-    \func impl (a b : Bool) : Dec (a = b) \elim  a, b
+    \lemma impl (a b : Bool) : Dec (a = b) \elim a, b
       | true, true => yes idp
       | false, false => yes idp
       | true, false => no true/=false
       | false, true => no (true/=false o inv)
   }
 
-\instance decEqUnit : DecEq (\Sigma)
-  | == a b => yes (Path.inProp a b)
+\instance decEqUnit : DecSet.Impl (\Sigma)
+  | decideEq a b => yes (Path.inProp a b)
 
-\instance decEqSigma {A : DecEq} (B : A -> \Set) (BD : \Pi (a : A) -> DecEq (B a)) : DecEq (\Sigma (a : A) (B a))
-  | == s1 s2 =>
-    \let se : QEquiv => sigmaEquiv B s1 s2
-    \in \case s1.1 == s2.1 \with {
+\instance decEqSigma {A : DecSet} (BD : \Pi (a : A) -> DecSet) : DecSet.Impl (\Sigma (a : A) (BaseSet.E {BD a}))
+  | decideEq s1 s2 =>
+    \let | B (a : A) : \Set => BaseSet.E {BD a}
+         | se : QEquiv => sigmaEquiv B s1 s2
+    \in \case decideEq s1.1 s2.1 \with {
       | no n => no (\lam e => n (pmap (\lam s => s.1) e))
-      | yes e1 => \case transport B e1 s1.2 == {BD s2.1} s2.2 \with {
+      | yes e1 => \case  transport B e1 s1.2 `decideEq` {BD s2.1} s2.2 \with {
         | yes e2 => yes (se.ret (e1, e2))
         | no n => no (\lam e => n (
           \let eqs => se.f e
@@ -33,4 +33,18 @@
                         (Path.inProp {s1.1 = s2.1} eqs.1 e1) eqs.2))
       }
     }
+
+\instance decEqNat : DecSet.Impl Nat
+  | decideEq => impl \where {
+  \lemma suc!=0 {n : Nat} (p : suc n = 0) : Empty => suc/=0 p
+
+  \lemma impl (a b : Nat) : Dec (a = b) \elim a, b
+    | 0, 0 => yes idp
+    | 0, suc _ => no (suc!=0 o inv)
+    | suc _, 0 => no suc!=0
+    | suc n, suc n1 => \case impl n n1 \with {
+      | yes e => yes (pmap suc e)
+      | no n => no (n o pmap pred)
+    }
+}
 
