@@ -21,7 +21,7 @@
 \instance decEqUnit : DecSet.Impl (\Sigma)
   | decideEq a b => yes (Path.inProp a b)
 
-\func decEqSigma {A : DecSet} (BD : \Pi (a : A) -> DecSet) : DecSet.Impl (\Sigma (a : A) (BaseSet.E {BD a})) \cowith
+\instance decEqSigma {A : DecSet} (BD : \Pi (a : A) -> DecSet) : DecSet.Impl (\Sigma (a : A) (BaseSet.E {BD a}))
   | decideEq s1 s2 =>
     \let | B (a : A) : \Set => BaseSet.E {BD a}
          | se : QEquiv => sigmaEquiv B s1 s2
