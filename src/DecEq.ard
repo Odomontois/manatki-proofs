@@ -1,10 +1,12 @@
 \import Data.Bool
 \import Equiv
+\import Equiv.Univalence
 \import Logic
 \import Paths
 \import Set
 \import Function
 \import Arith.Nat
+\import Set.Fin
 
 \instance decSetBool : DecSet.Impl Bool
   | decideEq => impl
@@ -19,7 +21,7 @@
 \instance decEqUnit : DecSet.Impl (\Sigma)
   | decideEq a b => yes (Path.inProp a b)
 
-\instance decEqSigma {A : DecSet} (BD : \Pi (a : A) -> DecSet) : DecSet.Impl (\Sigma (a : A) (BaseSet.E {BD a}))
+\func decEqSigma {A : DecSet} (BD : \Pi (a : A) -> DecSet) : DecSet.Impl (\Sigma (a : A) (BaseSet.E {BD a})) \cowith
   | decideEq s1 s2 =>
     \let | B (a : A) : \Set => BaseSet.E {BD a}
          | se : QEquiv => sigmaEquiv B s1 s2
@@ -42,9 +44,20 @@
     | 0, 0 => yes idp
     | 0, suc _ => no (suc!=0 o inv)
     | suc _, 0 => no suc!=0
-    | suc n, suc n1 => \case impl n n1 \with {
-      | yes e => yes (pmap suc e)
-      | no n => no (n o pmap pred)
-    }
+    | suc n, suc n1 => decTrans (propmap suc) (pmap pred) (impl n n1)
+}
+
+\lemma propmap {A B : \Set} (f : A -> B) {a a' : A} :  a = a' -> f a = f a' => pmap f
+
+\lemma decTrans {E D : \Prop} (f : E -> D) (g : D -> E) : Dec E -> Dec D =>
+  transport Dec (QEquiv-to-= (\new QEquiv f g (\lam _ => Path.inProp _ _) (\lam _ => Path.inProp _ _)))
+
+\instance decSetFin {n : Nat} : DecSet.Impl (Fin n)
+  | decideEq => impl \where {
+  \lemma impl {n : Nat} (a b : Fin n) : Dec (a = b) \elim n, a, b
+    | suc _, fzero, fzero => yes idp
+    | suc _, fzero, fsuc _ => no fzero/=fsuc
+    | suc _, fsuc _, fzero => no (fzero/=fsuc o inv)
+    | suc _, fsuc f, fsuc g => decTrans (propmap fsuc) (fsuc-isInj f g) (impl f g)
 }
 
