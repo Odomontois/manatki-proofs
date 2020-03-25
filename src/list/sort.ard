@@ -1,51 +1,125 @@
 \import Function
 \import Logic
 \import Order.Lattice
+\import Order.LinearOrder
 \import Order.PartialOrder
 \import Paths
 \import list
 \import order
+\import path
 \open Nat
 \open List (discriminate, ::-injective)
+\open DistributiveLattice
+\open JoinSemilattice
+\open MeetSemilattice
 
 \data ListIsOrdered {A : Poset} (l : List A) : \Prop \with
   | nil => ord-nil
   | :: a nil =>  ord-single
   | :: a (:: b t) => ord-cons (a <= b) (ListIsOrdered (b :: t)) \where {
-  \use \level orderedList-is-prop {A : Poset} {l : List A} (o1 o2 : ListIsOrdered l) : o1 = o2 \elim l, o1, o2
-    | nil, ord-nil , ord-nil =>  idp
-    | :: _ nil, ord-single, ord-single => idp
-    | :: a (:: b t), ord-cons p1 next1, ord-cons p2 next2 => pmap2 ord-cons (Path.inProp _ _) (Path.inProp _ _)
-
   \lemma tailIsOrdered {A : \Set} {po : Poset A} {a : A} {l : List A} (p : ListIsOrdered (a :: l)): ListIsOrdered l \elim l, p
     | nil, ord-single => ord-nil
     | :: b t, ord-cons a<=b next => next
 
   \lemma head-is-min {A : \Set} {po : Poset A} {a : A} {l : List A} (p : ListIsOrdered (a :: l)) : a <= List.head a l \elim l, p
     | nil, _ => <=-reflexive _
-    | :: b t, ord-cons a<=b p =>  a<=b
+    | :: b t, ord-cons a<=b p => a<=b
 }
 
-\func sort {A : \Set} {la : Lattice A} (as : List A) : List A
+\func sort {A : Lattice} (as : List A) : List A
   | nil => nil
   | :: a t => insert a (sort t)
 
   \where {
     \open ListIsOrdered
 
-    \func insert{A : \Set} {la : Lattice A} (a : A) (as : List A)  : List A \elim as
+    \func insert{A : Lattice} (a : A) (as : List A)  : List A \elim as
       | nil => a :: nil
       | :: b t => (join a b) :: insert (meet a b) t
 
-    \lemma insSort-sorting {A : \Set} {la : Lattice A} (as : List A) : ListIsOrdered (sort as)
+    \lemma insSort-sorting {A : Lattice} (as : List A) : ListIsOrdered (sort as)
       | nil => ord-nil
       | :: a t => insert-keeps-order a (sort t) (insSort-sorting t)
 
-    \lemma insert-keeps-order {A : \Set} {la : Lattice A} (a : A) (as : List A) (od : ListIsOrdered as) : ListIsOrdered (insert a as) =>
+    \lemma insert-keeps-order {A :  Lattice} (a : A) (as : List A) (od : ListIsOrdered as) : ListIsOrdered (insert a as) =>
       \let ins : Inserted a as => insert-cons a as od
       \in transport ListIsOrdered ins.el ins.od
 
-    \record Inserted  {A : \Set} {la : Lattice A} (a : A) (as : List A){
+    \lemma insert-idemp {A : Lattice} {a : A} {as : List A} (od : ListIsOrdered (a :: as)) : insert a as = a :: as \elim as, od
+      | nil, ord-single => idp
+      | :: b tail, ord-cons a<=b rec =>
+        pmap2 (::) (join_<= _ _ a<=b) (pmap (\lam x => insert x tail ) (meet_<= _ _ a<=b) *> insert-idemp rec)
+
+    \lemma insert-lesser {A : Lattice} {a b : A} (p : a <= b) {t : List A} (od : ListIsOrdered (b :: t)) :
+      insert a (b :: t) = a :: b :: t \elim t, od
+      | nil, ord-single => pmap2 (\lam x y => x :: y :: nil) (join_<= _ _ p) (meet_<= _ _ p)
+      | :: c tail, ord-cons b<=c rec =>
+        pmap2 (::) (join_<= _ _ p) (
+          pmap (\lam x => join x c :: insert (meet x c) tail) (meet_<= _ _ p) *> insert-lesser b<=c rec
+        )
+
+    \lemma insert-bigger {A : Lattice} {a b : A} (p : a >= b) {t : List A} (od : ListIsOrdered (b :: t)) :
+      insert a (b :: t) = b :: (insert a t) \elim t, od
+      | nil, ord-single => pmap2 (\lam x y => x :: y :: nil) (join-comm _ _ *> join_<= _ _ p) (meet-comm _ _ *> meet_<= _ _ p)
+      | :: c tail, ord-cons b<=c l => pmap2 (::) (join-comm _ _ *> join_<= _ _ p) (
+        pmap (\lam x => join x c :: insert (meet x c) tail) (meet-comm _ _ *> meet_<= _ _ p)
+      )
+
+    \lemma shuffle-joins {A : Lattice} (a b c : A) : join a (join b c) = join b (join a c) =>
+      pmap (join a) (join-comm _ _) *> inv (join-assoc _ _ _) *> join-comm _ _
+
+    \lemma push-keep {A : Lattice} {a b : A} {t : List A} (a>=b : a >= b)
+                     (od : ListIsOrdered (b :: t)) : ListIsOrdered (b :: insert a t) =>
+      transport ListIsOrdered (insert-bigger a>=b od) (insert-keeps-order a (b :: t) od)
+
+    \lemma insert-symm {A : TotalOrder} (a b : A) {as : List A} (od : ListIsOrdered as) :
+      insert a (insert b as) = insert b (insert a as) \elim as
+      | nil => pmap2 (\lam x y => x :: y :: nil) (join-comm a b) (meet-comm a b)
+      | :: c t => \case tricompare' a b c \with {
+        | a_b_c a<=b b<=c a<=c =>
+          pmap (insert a) (insert-lesser b<=c od) *>
+          insert-lesser a<=b (ord-cons b<=c od) *>
+          pmap (:: a) (inv (insert-lesser b<=c od)) *>
+          inv (insert-bigger a<=b (ord-cons a<=c od)) *>
+          pmap (insert b) (inv (insert-lesser a<=c od))
+
+        | b_a_c b<=a a<=c b<=c =>
+          pmap (insert a) (insert-lesser b<=c od) *>
+          insert-bigger b<=a (ord-cons b<=c od) *>
+          pmap (:: b) (insert-lesser a<=c od) *>
+          inv (insert-lesser b<=a (ord-cons a<=c od)) *>
+          pmap (insert b) (inv (insert-lesser a<=c od))
+
+        | b_c_a b<=c c<=a b<=a =>
+          pmap (insert a) (insert-lesser b<=c od) *>
+          insert-bigger b<=a (ord-cons b<=c od) *>
+          pmap (:: b) (insert-bigger c<=a od) *>
+          inv (insert-lesser b<=c (push-keep c<=a od)) *>
+          pmap (insert b) (inv (insert-bigger c<=a od))
+
+        | c_b_a c<=b b<=a c<=a =>
+          pmap (insert a) (insert-bigger c<=b od) *>
+          insert-bigger c<=a (push-keep c<=b od) *>
+          pmap (:: c) (insert-symm a b (tailIsOrdered od)) *>
+          inv (insert-bigger c<=b (push-keep c<=a od)) *>
+          pmap (insert b) (inv (insert-bigger c<=a od))
+
+        | c_a_b c<=a a<=b c<=b =>
+          pmap (insert a) (insert-bigger c<=b od) *>
+          insert-bigger c<=a (push-keep c<=b od) *>
+          pmap (:: c) (insert-symm a b (tailIsOrdered od)) *>
+          inv (insert-bigger c<=b (push-keep c<=a od)) *>
+          pmap (insert b) (inv (insert-bigger c<=a od))
+
+        | a_c_b a<=c c<=b a<=b =>
+          pmap (insert a) (insert-bigger c<=b od) *>
+          insert-lesser a<=c (push-keep c<=b od) *>
+          pmap (:: a) (inv (insert-bigger c<=b od)) *>
+          inv (insert-bigger a<=b (ord-cons a<=c od)) *>
+          pmap (insert b) (inv (insert-lesser a<=c od))
+      }
+
+    \record Inserted  {A : Lattice } (a : A) (as : List A){
       | h : A
       | tail : List A
       | od : ListIsOrdered (h :: tail)
@@ -53,9 +127,7 @@
       | eh : join (List.head a as) a = h
     }
 
-    \open JoinSemilattice
-
-    \func insert-cons {A : \Set} {la : Lattice A} (a : A) (as : List A) (od : ListIsOrdered as) : Inserted a as \elim as
+    \func insert-cons {A : Lattice} (a : A) (as : List A) (od : ListIsOrdered as) : Inserted a as \elim as
       | nil => inil a
       | :: b t =>
         \let r => insert-cons (meet a b) t (tailIsOrdered od)
@@ -63,14 +135,14 @@
       \where {
         \open List
 
-        \func inil {A : \Set} {la : Lattice A} (a : A) : Inserted a nil \cowith
+        \func inil {A : Lattice} (a : A) : Inserted a nil \cowith
           | h => a
           | tail => nil
           | od => ord-single
           | el => idp
           | eh => join-idemp _
 
-        \func icons {A : \Set} {la : Lattice A} (a b : A) (as : List A)
+        \func icons {A : Lattice} (a b : A) (as : List A)
                     (od : ListIsOrdered (b :: as)) (rec : Inserted (meet a b) as)
           : Inserted a (b :: as) \cowith
           | h => join a b
@@ -82,8 +154,52 @@
           | el => idp
           | eh => join-comm _ _
       }
-
-    \module comm \where{
-      \func insert2 {A : \Set} {la : Lattice A} (a b : A) (as : List A) : List A => insert a (insert b as)
-    }
   }
+
+\open sort (insert)
+
+\record TriProof {A : DistributiveLattice} (a b c : A){
+  \lemma meet-squash2 : meet (meet b c) (meet a b) = meet a (meet b c) =>
+    pmap (meet _) (meet-comm _ _) *>
+    inv( meet-assoc  _ _ _) *>
+    pmap (\lam x => meet x a)  (meet-comm _ _ *> meet_<= _ _ (meet-left _ _)) *>
+    meet-comm _ _
+
+  \lemma meet-squash3 : meet (meet a (join b c)) (meet b c) = meet a (meet b c) =>
+    pmap (\lam x => meet x (meet b c)) (distrib _ _ _) *>
+    meet-comm _ _ *>
+    distrib _ _ _ *>
+    pmap2 join meet-squash2
+          (pmap (meet _) (meet-comm _ _) *> meet-comm _ _ *> meet-squash2 {\new TriProof b c a }*> inv (meet-assoc _ _ _) *> meet-comm _ _) *>
+    join-idemp _
+
+  \lemma shuffle-joins : join a (join b c) = join b (join a c) =>
+    pmap (join a) (join-comm _ _) *> inv (join-assoc _ _ _) *> join-comm _ _
+
+  \lemma jmjm : join (meet a (join b c)) (meet b c) = join (meet b (join a c)) (meet a c) =>
+    pmap (\lam x => join x (meet b c)) (distrib _ _ _ *> join-comm _ _) *>
+    join-assoc _ _ _ *>
+    pmap (join (meet a c)) (pmap (\lam x => join x (meet b c)) (meet-comm _ _) *> inv (distrib _ _ _) ) *>
+    join-comm _ _
+
+  \lemma mmjm : meet (meet a (join b c)) (meet b c) = meet (meet b (join a c)) (meet a c) =>
+    meet-squash3 *>
+    pmap (meet a) (meet-comm _ _) *>
+    inv (meet-assoc _ _ _) *>
+    meet-comm _ _ *>
+    inv (TriProof.meet-squash3 {\new TriProof b a c})
+
+  \lemma insert-single : insert a (insert b (c :: nil)) = insert b (insert a (c :: nil)) =>
+    pmap3 (\lam x y z => x :: y :: z :: nil) shuffle-joins jmjm mmjm
+}
+
+\record TriProof' {t : List A} (ot : ListIsOrdered t) \extends TriProof{}
+
+\open TriProof
+
+\record QuadProof (d : A) (t : List A) (c<=d : c <= d) (od : ListIsOrdered (d :: t)) \extends TriProof{
+  \lemma jmjm2 : join (meet a (join b c)) (join (meet b c) d) = join (meet b (join a c)) (join (meet a c) d) =>
+    inv(join-assoc _ _ _) *>
+    pmap (\lam x => join x d) jmjm *>
+    join-assoc _ _ _
+}

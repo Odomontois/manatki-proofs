@@ -4,7 +4,7 @@
 \import Logic
 \import Paths
 \import monoid
-\import order
+--\import order
 \import Function
 \import Order.LinearOrder
 \import Order.PartialOrder
@@ -80,13 +80,24 @@
   \func reverse' {A : \Type} (l : List A) : List A => step l nil \where {
     \func step {A : \Type} (l acc : List A) : List A \elim l
       | nil => acc
-      | :: h t => step t (h :: acc)
+      | :: h t => step t (h :: acc) \where {
+      \func cons {A : \Type} (l acc l' : List A) : step l (acc ++ l') = step l acc ++ l' \elim  l
+        | nil => idp
+        | :: a tail => cons _ _ _
 
-    \func antisym {A : \Type} (l acc : List A) : reverse' (step l acc) = step acc l \elim l
-      | nil => idp
-      | :: a tail => antisym _ _
+      \func inv {A : \Type} (l acc : List A) : reverse' (step l acc) = step acc l \elim l
+        | nil => idp
+        | :: a tail => inv _ _
 
-    \func involutive {A : \Type} (l : List A) : reverse' (reverse' l) = l => antisym l nil
+      \func comp {A : \Type} (l l' acc : List A) : step (l ++ l') acc = step l' (step l acc) \elim l
+        | nil => idp
+        | :: a tail => comp _ _ _
+    }
+
+    \func antisym {A : \Type} (l l' : List A) : reverse' (l ++ l') = reverse' l' ++ reverse' l =>
+      step.comp _ _ _ *> step.cons _ _ _
+
+    \func involutive {A : \Type} (l : List A) : reverse' (reverse' l) = l => step.inv l nil
   }
 }
 

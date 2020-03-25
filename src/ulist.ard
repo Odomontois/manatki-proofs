@@ -1,23 +1,28 @@
 \import list
 \open Nat
-\import Order.LinearOrder (LinearOrder)
-
+\import Order.LinearOrder
+\import list.sort
 
 \data UList (A : \Type)
   | unil
   | \infixr 6 ~:: (a : A) (tail : UList A)
   | swap (i : I) (a b : A) (tail : UList A) \elim i {
-    | left  => a ~:: b ~:: tail
+    | left => a ~:: b ~:: tail
     | right => b ~:: a ~:: tail
   } \where {
-  \func ulist {A : \Type} {do : LinearOrder.Dec A} (ul : UList A): List A
+  \func sorted {A : TotalOrder} (ul : UList A): List A
     | unil => nil
-    | ~:: a t => a :: (ulist t)
-    | swap i a b t => {?}
+    | ~:: a t => sort.insert a (sorted t)
+    | swap i a b t => sort.insert-symm a b (keeps-order t) @ i
+    \where {
+      \lemma keeps-order {A : TotalOrder} (ul : UList A) : ListIsOrdered (sorted ul)
+        | unil => ListIsOrdered.ord-nil
+        | ~:: a tail => sort.insert-keeps-order a (sorted tail) (keeps-order tail)
+    }
 
   \func size {A : \Type} (ul : UList A): Nat
     | unil => 0
     | ~:: a t => suc (size t)
-    | swap i a b t =>  size t + 2
+    | swap i a b t => size t + 2
 }
 

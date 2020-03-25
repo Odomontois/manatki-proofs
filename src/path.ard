@@ -1,0 +1,2 @@
+\func pmap3 {A B C D : \Type} (f : A -> B -> C -> D) {a a' : A} (p1 : a = a') {b b' : B} (p2 : b = b') {c c' : C} (p3 : c = c'): f a b c = f a' b' c'
+  => path (\lam i => f (p1 @ i) (p2 @ i) (p3 @ i))
