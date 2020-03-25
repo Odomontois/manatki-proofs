@@ -76,6 +76,18 @@
       | nil => idp
       | :: h t => antisym _ _ *> pmap (:: h) (involutive t)
   }
+
+  \func reverse' {A : \Type} (l : List A) : List A => step l nil \where {
+    \func step {A : \Type} (l acc : List A) : List A \elim l
+      | nil => acc
+      | :: h t => step t (h :: acc)
+
+    \func antisym {A : \Type} (l acc : List A) : reverse' (step l acc) = step acc l \elim l
+      | nil => idp
+      | :: a tail => antisym _ _
+
+    \func involutive {A : \Type} (l : List A) : reverse' (reverse' l) = l => antisym l nil
+  }
 }
 
 \instance listMonoid {A : \Set}: Monoid (List A)
