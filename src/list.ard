@@ -63,6 +63,19 @@
       \lemma unordered {A : \Set} {to : JoinSemilattice A} (a a' : A) (as : List A) :
         minimum a (a' :: as) = minimum a' (a :: as) => pmap (\lam x => minimum x as) (join-comm _ _)
     }
+
+  \func reverse {A : \Type} (l : List A) : List A
+    | nil => nil
+    | :: h t => reverse t ++ (h :: nil) \where {
+    \func antisym {A : \Type} (l1 l2 : List A) : reverse (l1 ++ l2) = reverse l2 ++ reverse l1
+      | nil, _ => inv ( ++nil _)
+      | :: a tail, nil => pmap (\lam x => reverse x ++ (a :: nil)) (++nil _)
+      | :: a tail, :: a1 tail1 => pmap (\lam x => x ++ (a :: nil)) (antisym _ _) *> assoc _ _ _
+
+    \func involutive {A : \Type} (l : List A) : reverse (reverse l) = l
+      | nil => idp
+      | :: h t => antisym _ _ *> pmap (:: h) (involutive t)
+  }
 }
 
 \instance listMonoid {A : \Set}: Monoid (List A)
@@ -122,6 +135,7 @@
 
 \func Elem {A : \Type} (e : A) (l : List A) => TruncP (Index e l) \where {
   \cons here {A : \Type} {a h : A} {l : List A} (p : a = h) : Elem a (h :: l) => TruncP.inP (Index.Here p)
+
   \cons there {A : \Type} {a h : A} {l : List A} (e : Index a l) : Elem a (h :: l) => TruncP.inP (Index.There e)
 }
 

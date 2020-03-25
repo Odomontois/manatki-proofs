@@ -44,13 +44,14 @@
     | 0, 0 => yes idp
     | 0, suc _ => no (suc!=0 o inv)
     | suc _, 0 => no suc!=0
-    | suc n, suc n1 => decTrans (propmap suc) (pmap pred) (impl n n1)
+    | suc n, suc n1 => decTransEq (pmap suc) (pmap pred) (impl n n1)
 }
-
-\lemma propmap {A B : \Set} (f : A -> B) {a a' : A} :  a = a' -> f a = f a' => pmap f
 
 \lemma decTrans {E D : \Prop} (f : E -> D) (g : D -> E) : Dec E -> Dec D =>
   transport Dec (QEquiv-to-= (\new QEquiv f g (\lam _ => Path.inProp _ _) (\lam _ => Path.inProp _ _)))
+
+\lemma decTransEq  {A B : \Set} {a a' : A} {b b' : B} (f : a = a' -> b = b') (g : b = b' -> a = a') : Dec (a = a') -> Dec (b = b') =>
+  decTrans f g
 
 \instance decSetFin {n : Nat} : DecSet.Impl (Fin n)
   | decideEq => impl \where {
@@ -58,6 +59,6 @@
     | suc _, fzero, fzero => yes idp
     | suc _, fzero, fsuc _ => no fzero/=fsuc
     | suc _, fsuc _, fzero => no (fzero/=fsuc o inv)
-    | suc _, fsuc f, fsuc g => decTrans (propmap fsuc) (fsuc-isInj f g) (impl f g)
+    | suc _, fsuc f, fsuc g => decTransEq (pmap fsuc) (fsuc-isInj f g) (impl f g)
 }
 
