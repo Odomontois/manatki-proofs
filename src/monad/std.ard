@@ -3,6 +3,7 @@
 \import funs
 \import sets
 \import monoid
+\import Function
 
 \func identityMonad : Monad (id) \cowith
   | pure x => x

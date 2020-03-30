@@ -1,0 +1,152 @@
+\import Equiv
+\import Equiv.Univalence
+\import Logic
+\import Paths
+\import list
+\import Function
+
+\data Chain (l : List \Type) \elim l
+  | :: h t => end h
+  | :: h t => \infixr 4 @: h (Chain t)
+
+\func \infixl 7 t* (A B : \Type) => \Sigma A B
+
+\data \infixl 5 t+ (A B : \Type)
+  | inl A
+  | inr B
+
+\func t0 => Empty
+
+\func t1 => \Sigma
+
+\func *swap {a b : \Type} (p : a t* b) : b t* a
+  | (a, b) => (b, a)
+
+\func +swap {a b : \Type} (s : a t+ b) : b t+ a
+  | inl a => inr a
+  | inr b => inl b
+
+\func +swap-inv {a b : \Type} (s : a t+ b) : +swap (+swap s) = s
+  | inl a => idp
+  | inr b => idp
+
+\func t*-comm {a b : \Type} : a t* b = b t* a => QEquiv-to-= \new QEquiv  {
+  | f => *swap
+  | ret => *swap
+  | ret_f _ => idp
+  | f_sec _ => idp
+}
+
+\func t*-lunit {a : \Type} : a t* t1 = a => QEquiv-to-= \new QEquiv {
+  | f (p : a t* t1) => p.1
+  | ret x => (x, ())
+  | ret_f p => idp
+  | f_sec x => idp
+}
+
+\func t*-runit {a : \Type} : t1 t* a = a => t*-comm *> t*-lunit
+
+\func t+-comm {a b : \Type} : a t+ b = b t+ a => QEquiv-to-= \new QEquiv  {
+  | f => +swap
+  | ret => +swap
+  | ret_f => +swap-inv
+  | f_sec => +swap-inv
+}
+
+\func t*-assoc {a b c : \Type} : a t* b t* c = a t* (b t* c) => QEquiv-to-= \new QEquiv {
+  | f (p : a t* b t* c) => (p.1.1, (p.1.2, p.2))
+  | ret (p :  a t* (b t* c)) => ((p.1, p.2.1), p.2.2)
+  | ret_f p => idp
+  | f_sec p => idp
+}
+
+\func t0-ldrop {a : \Type} (s : a t+ t0) : a
+  | inl a => a
+  | inr b => absurd b
+
+\func t0-ldrop-inl {a : \Type} (s : a t+ t0) : inl (t0-ldrop s) = s
+  | inl a => idp
+  | inr b => absurd b
+
+\func t+-lunit {a : \Type} : a t+ t0 = a => QEquiv-to-= \new QEquiv {
+  | f  => t0-ldrop
+  | ret => inl
+  | ret_f => t0-ldrop-inl
+  | f_sec _ => idp
+}
+
+\record T+-assoc (a b c : \Type){
+  \func SL => a t+ b t+ c
+
+  \func SR => a t+ (b t+ c)
+
+  \func to (s : SL) : SR
+    | inl (inl a) => inl a
+    | inl (inr b) => inr (inl b)
+    | inr c => inr (inr c)
+
+  \func from (s : SR) : SL
+    | inl a => inl (inl a)
+    | inr (inl b) => inl (inr b)
+    | inr (inr c) => inr c
+
+  \func to-from (s : SR) : to (from s) = s
+    | inl a => idp
+    | inr (inl b) => idp
+    | inr (inr c) => idp
+
+  \func from-to (s : SL) : from (to s) = s
+    | inl (inl a) => idp
+    | inl (inr b) => idp
+    | inr  c => idp
+
+  \func assoc : SL = SR => QEquiv-to-= \new QEquiv {
+    | f => to
+    | ret => from
+    | ret_f => from-to
+    | f_sec => to-from
+  }
+}
+
+\record T*+-distrib (a b c : \Type){
+  \func TP => a t* (b t+ c)
+
+  \func TS => a t* b t+ a t* c
+
+  \func to (p : TP) : TS
+    | (a, inl b) => inl (a, b)
+    | (a, inr c) => inr (a, c)
+
+  \func from (s : TS) : TP
+    | inl (a, b) => (a, inl b)
+    | inr (a, c) => (a, inr c)
+
+  \func to-from (s : TS) : to (from s) = s
+    | inl (a, b) => idp
+    | inr (a, c) => idp
+
+  \func from-to (p : TP) : from (to p) = p
+    | (a, inl b) => idp
+    | (a, inr c) => idp
+
+  \func distrib : TP = TS => QEquiv-to-= \new QEquiv {
+    | f => to
+    | ret => from
+    | ret_f => from-to
+    | f_sec => to-from
+  }
+}
+
+\func t+-assoc {a b c : \Type} : a t+ b t+ c = a t+ (b t+ c) => T+-assoc.assoc {\new T+-assoc a b c }
+
+\func t*+-distrib {a b c : \Type}: a t* (b t+ c) = a t* b t+ a t* c => T*+-distrib.distrib {\new T*+-distrib a b c}
+
+\func proof1 (a b c : \Type) : a t* (t1 t+ (b t* (t1 t+ c))) = a t+ (a t* b) t+ (a t* b t* c) =>
+  t*+-distrib *>
+  pmap (\lam x => x t+ _) t*-lunit *>
+  pmap (t+ a) (
+    inv t*-assoc *>
+    t*+-distrib *>
+    pmap (\lam x => x t+ _) t*-lunit
+  ) *>
+  inv (t+-assoc)

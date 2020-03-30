@@ -1,3 +1,4 @@
+\import Data.Bool
 \import Equiv
 \import HLevel
 \import Paths
@@ -17,5 +18,11 @@
     | right => B
   }
 
-
 \func propeq {A : \Type} (aprop : isProp A) {a a' : A} : isProp (a = a') => {?}
+
+
+\lemma and-assoc (x y z : Bool)
+  : (x `and` y) `and` z = x `and` (y `and` z)
+  | false, _    , _ => idp
+  | true , false, _ => idp
+  | true , true, z => path (\lam _ => z)

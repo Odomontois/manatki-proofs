@@ -1,0 +1,21 @@
+\data IO (A : \Set) : \Set (\suc \lp)
+  | Input (A = Nat)
+  | Output Nat (A = (\Sigma))
+
+\func UnaryTC => \Set -> \Set (\suc \lp)
+
+\data ITreeF (E : UnaryTC) (R : \Set) (X : \Type)
+  | retF R
+  | tauF X
+  | visF {A : \Set} (event : E A) (k : A -> X)
+
+\func ITree  (E : UnaryTC) (R : \Set) : \Type => \Sigma  (X : \Type) X (X -> ITreeF E R X)
+
+\func ret {E : UnaryTC} {R : \Set} (r : R) : ITree E R => (\Sigma , (), \lam _ => retF r)
+
+\func tau {E : UnaryTC} {R : \Set} (t : ITree E R) : ITree E R => t
+
+\func vis {E : UnaryTC} {R : \Set} {A : \Set} (event : E A) (k : A -> ITree E R) : ITree E R =>
+  (\Pi (a : A) -> (k a).1 ,\lam a => (k a).2,\lam f => visF event (\lam _ a' => (k a').2))
+
+\func spin : ITree IO (\Sigma) => (\Sigma, (), \lam _ => tauF ())
