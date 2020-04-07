@@ -1,0 +1,31 @@
+\import Algebra.Semiring
+\import Algebra.Monoid
+\import Paths
+\import Arith.Nat
+
+\func sum-to (n : Nat) : Nat
+  | 0 => 0
+  | suc n => suc (n + sum-to n)
+
+\lemma suc-left (n m : Nat) : suc n + m = suc (n + m) => +-assoc n 1 m *> pmap (+ n) (+-comm 1 m)
+
+\lemma sum-to-formula (n : Nat) : sum-to n * 2 = n * suc n
+  | 0 => idp
+  | suc n => pmap suc (
+    pmap (\lam x => suc x + _) (zro-left _) *>
+    suc-left _ _ *>
+    pmap suc (
+      +-assoc _ _ _ *>
+      pmap (+ n) (
+        pmap (+ _) (+-comm _ _) *>
+        inv (+-assoc _ _ _) *>
+        pmap (\lam x => x + n) (
+          pmap (\lam x => x + _) (inv (zro-left _))  *>
+          sum-to-formula n *>
+          *-comm _ _
+        )
+      ) *>
+      +-comm  _ _
+    )*>
+    inv (suc-left _ _)
+  )
