@@ -1,0 +1,34 @@
+\import Paths
+
+\func \infixl 4 o {A B C : \Type} (g : B -> C) (f : A -> B) : A -> C => \lam a => g (f a)
+
+\func o-assoc {A B C D : \Type} (h : C -> D) (g : B -> C) (f : A -> B) : h o (g o f) = (h o g) o f => idp
+
+\func rec-product {A B C : \Type} (f : A -> B -> C) (p : \Sigma A B) : C => f p.1 p.2
+
+\func rec-sigma {A C : \Type} (B : A -> \Type) (f : \Pi (x : A) -> B x -> C) (p : \Sigma (x : A) (B x)) : C =>
+  f p.1 p.2
+
+\func iter-Nat {C : \Type} (z : C)  (s : C -> C) (n : Nat) : C \elim n
+  | 0 => z
+  | suc n => s (iter-Nat z s n)
+
+
+\func rec-Nat' {C : \Type} (z : C)  (s : Nat -> C -> C) (n : Nat) : C =>
+  (iter-Nat {\Sigma Nat C} (0, z) (\lam p => (suc p.1, s p.1 p.2 )) n).2 \where {
+  \func rec-Nat'-z {C : \Type} (z : C) (s : Nat -> C -> C)  :
+    rec-Nat' z s 0 = z => idp
+
+  \func rec-Nat'-suc {C : \Type} (z : C) (s : Nat -> C -> C) (n : Nat) :
+    rec-Nat' z s (suc n) = s n (rec-Nat' z s n) \elim n
+    | 0 => idp
+    | suc n =>  idp *> {?}
+}
+
+\func rec-Nat {C : \Type} (z : C)  (s : Nat -> C -> C) (n : Nat) : C \elim n
+ | 0 => z
+ | suc n => s n (rec-Nat z s n)
+
+
+
+

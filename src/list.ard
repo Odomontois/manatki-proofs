@@ -2,6 +2,7 @@
 \import HLevel
 \import Logic
 \import Logic
+\import Logic.Meta
 \import Paths
 \import monoid
 --\import order
@@ -14,12 +15,7 @@
 \data List (A : \Type)
   | nil
   | \infixr 6 :: (a : A) (tail : List A) \where {
-  \lemma discriminate {A : \Type} {a : A} {t : List A} (p : nil = a :: t) : Empty => coe (discrT o (p @)) () right
-    \where {
-      \func discrT {A : \Type} (as : List A) : \Prop
-        | nil => \Sigma
-        | :: _ _ => Empty
-    }
+  \lemma discriminate {A : \Type} {a : A} {t : List A} (p : nil = a :: t) : Empty => contradiction
 
   \lemma head-monotone {A : \Set} {la : Poset A} (a b : A) (as : List A) (p : a <= b) : head a as <= head b as \elim as
     | nil => p
