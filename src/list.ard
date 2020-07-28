@@ -20,6 +20,7 @@
   | nil
   | \infixr 6 :: (a : A) (tail : List A) \where {
   \cons single {A : \Type} (a : A) : List A => a :: nil
+
   \func \infix 10 ## {A B : \Type} (f : List A -> B) (a : A) => f (single a)
 
   \lemma discriminate {A : \Type} {a : A} {t : List A} (p : nil = a :: t) : Empty => contradiction
@@ -47,9 +48,9 @@
     | nil => Nat.zero
     | :: _ t => suc (length t)
 
-  \func \infixr 5 ++ {A : \Type} (l1 : List A) (l2 : List A) : List A
-    | nil, l => l
-    | (:: h t), l => h :: (t ++ l)
+  \func \infixr 5 ++ {A : \Type} (l1 : List A) (l2 : List A) : List A \elim l1
+    | nil => l2
+    | (:: h t) => h :: (t ++ l2)
 
   \func ++nil {A : \Type} (l : List A): l ++ nil = l
     | nil => idp
@@ -133,9 +134,21 @@
 \data Index {A : \Type} (e : A) (l : List A) \elim l
   | :: h t => Here (e = h)
   | :: h t => There (Index e t) \where {
+  \open List (++)
+
   \func at {A : \Type} {l : List A} (n : Fin (List.length l)) : Index (List.at l n) l \elim l,n
     | :: a tail, fzero => Here idp
     | :: a tail, fsuc n => There (at n)
+
+  \func swap-head {A : \Type} {a b e : A} {l : List A} (i : Index e (a :: b :: l)) : Index e (b :: a :: l)
+    | Here p => There (Here p)
+    | There (Here p) => Here p
+    | There (There i) => There (There i)
+
+  \func swap {A : \Type} {a b e : A} {l l' : List A} (i : Index e (l' ++ a :: b :: l)) : Index e (l' ++ b :: a :: l) \elim l', i
+    | nil, i => swap-head i
+    | :: c l', Here p => Here p
+    | :: c l', There i => There (swap i)
 
   \func no-nil {A B : \Type} (a : A) (eq : Index a nil) : B
 
@@ -168,13 +181,15 @@
 }
 
 \func Elem {A : \Type} (e : A) (l : List A) => TruncP (Index e l) \where {
-  \func hereidp {A : \Type} {a : A} {l : List A} : Elem a (a :: l) => here idp
+  \open List (++)
 
-  \func @0 {A : \Type} {a : A} {l : List A} : Elem a (a :: l) => here idp
+  \lemma hereidp {A : \Type} {a : A} {l : List A} : Elem a (a :: l) => here idp
 
-  \func @1 {A : \Type} {a b : A} {l : List A}: Elem b (a :: b :: l) => at (fnat 1)
+  \lemma @0 {A : \Type} {a : A} {l : List A} : Elem a (a :: l) => here idp
 
-  \func @2 {A : \Type} {a b c : A} {l : List A}: Elem c (a :: b :: c :: l) => at (fnat 2)
+  \lemma @1 {A : \Type} {a b : A} {l : List A}: Elem b (a :: b :: l) => at (fnat 1)
+
+  \lemma @2 {A : \Type} {a b c : A} {l : List A}: Elem c (a :: b :: c :: l) => at (fnat 2)
 
   \func at {A : \Type} {l : List A} (n : Fin (List.length l)) : Elem (List.at l n) l => TruncP.inP (Index.at n)
 
@@ -182,8 +197,14 @@
 
   \cons there {A : \Type} {a h : A} {l : List A} (e : Index a l) : Elem a (h :: l) => TruncP.inP (Index.There e)
 
-  \func there' {A : \Type} {a h : A} {l : List A} (e : Elem a l) : Elem a (h :: l) \elim e
+  \lemma there' {A : \Type} {a h : A} {l : List A} (e : Elem a l) : Elem a (h :: l) \elim e
     | inP i => TruncP.inP (Index.There i)
+
+  \lemma swap-head {A : \Type} {a b e : A} {l : List A} (i : Elem e (a :: b :: l)) : Elem e (b :: a :: l)
+    | inP idx => inP (Index.swap-head idx)
+
+  \lemma swap {A : \Type} {a b e : A} {l l' : List A} (i : Elem e (l' ++ a :: b :: l)) : Elem e (l' ++ b :: a :: l)
+    | inP idx => inP (Index.swap idx)
 }
 
 \open Nat (+)

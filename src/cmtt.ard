@@ -13,9 +13,10 @@
 
 \cons \infixr 8 []> {T : \Set} (A B : Type T) : Type T => [] (single A) B
 
-\open List
+\open List \hiding (at)
+\open Elem \hiding (at)
 
-\data ICML {T : \Set} (D : Valid T) (G : Ctx T) (res : Ctx T) \elim res
+\data ICML {T : \Set} (D : Valid T) (G R : Ctx T) \elim R
   | single A => hyp (Elem A G)
   | single A => ctxhyp {X : Ctx T} (Elem (A, X) D) (ICML D G X)
   | single (-->  A B) => I-> (ICML D (A :: G) (single B))
@@ -25,8 +26,6 @@
   | :: A B => ctx:: (ICML D G (single A)) (ICML D G B)
   | nil => ctxnil \where {
   \func Stat {T : \Set} (t : Type T) : \Set => ICML nil nil (single t)
-
-  \open Elem
 
   \func example-[1] {T : \Set} (C D A : Type T):  Stat $ C []> A --> [] (C :: D :: nil) A =>
     I-> $ E[] (single C) A (hyp @0) $  I[] $ ctxhyp @0 $ hyp @0
@@ -69,25 +68,68 @@
     E-> A (ctxhyp @1 $ hyp @0) $ hyp @0
 }
 
-\data SICML {T : \Set} (D : Valid T) (G : Ctx T) (res : Ctx T) \elim D, G, res
-  | D, :: P G, single P' => init (P = P')
-  | (:: (A, X) D') \as D, G, single C => reflect (SICML D G X) (SICML D (A :: G) (single C))
-  | D, G, single (--> A B) => ->R (SICML D (A :: G) (single B))
-  | D, :: (--> A B) G, single C => ->L (SICML D (A --> B :: G) (single A)) (SICML D (B :: A --> B :: G ) (single C))
-  | D, G, single ([] X A) => []R (SICML D X (single A))
-  | D, :: ([] X A) G, single C => []L (ICML ((A, X) :: D) G (single C))
-  | D, G, nil => nilctx
-  | D, G, :: A R => ::ctx (ICML D G (single A)) (ICML D G R) \where {
+\data Test (m n : Nat) \elim n
+  | suc ((suc _) \as x) => lol (x = x)
+
+\data SICML {T : \Set} (D : Valid T) (G R : Ctx T) \elim R
+  | single (just _ \as p)  => init (Elem p G)
+  | single C => reflect {A : Type T} {X : Ctx T} (Elem (A, X) D) (SICML D G X) (SICML D (A :: G) (single C))
+  | single (--> A B) => ->R (SICML D (A :: G) (single B))
+  | single C => ->L {A B : Type T} (Elem (A --> B) G) (SICML D G (single A)) (SICML D (B :: G) (single C))
+  | single ([] X A) => []R (SICML D X (single A))
+  | single C => []L {A : Type T} {X : Ctx T} (Elem ([] X A) G) (SICML ((A, X) :: D) G (single C))
+  | nil => nilctx
+  | :: A R => ::ctx (SICML D G (single A)) (SICML D G R) \where {
   \func \infix 2 ==> {T : \Set} (GD : \Sigma  (Valid T) (Ctx T)) (C : Type T) : \Set
     | (D, G), C => SICML D G (single C)
 
-  \func Weakening {T : \Set} {D : Valid T}  {G X : Ctx T} {A C : Type T} (p : (D, G) ==> C) :
-    \Sigma (((A, X) :: D, G) ==> C) ((D, A :: G) ==> C) \elim D, G, C, p
-    | D, :: P G, C, init _ => ({?}, {?})
-    | :: (B, Y) D', G,  C, reflect _ _ => {?}
-    |  D, G, --> A B, ->R _ => {?}
-    | D, :: (--> A B) G, C, ->L _ _ => {?}
-    | _ , _, _ , _ => {?}
+  \func swap-G {T : \Set} {D : Valid T} {G R : Ctx T} (G' : Ctx T) {A' B' : Type T}
+               (p : SICML D (G' ++ A' :: B' :: G) R) : SICML D (G' ++ B' :: A' :: G) R \elim R, p
+    | single (just _ \as p), init i => init $ Elem.swap i
+    | single C, reflect {A} e1 px ac => reflect e1 (swap-G _ px) $ swap-G (A :: G') ac
+    | single (--> A B), ->R px => ->R $ swap-G (A :: G') px
+    | single C, ->L {A} {B} i l r => ->L (Elem.swap i) (swap-G _ l) (swap-G (B :: G') r)
+    | single ([] X A), []R p => []R p
+    | single C, []L {A} i p => []L (Elem.swap i) (swap-G _ p)
+    | nil, nilctx => nilctx
+    | :: C R, ::ctx h t => ::ctx (swap-G _ h) (swap-G _ t)
+
+  \func swap-D {T : \Set} {D : Valid T} {G R X Y : Ctx T} (D' : Valid T) {A' B' : Type T}
+               (p : SICML (D' ++ (A', X) :: (B', Y) :: D) G R) : SICML (D' ++ (B', Y) :: (A', X) :: D) G R \elim R, p
+    | single (just _ \as p), init i => init  i
+    | single C, reflect {A} e1 px ac => reflect (Elem.swap e1) (swap-D _ px) (swap-D _ ac)
+    | single (--> A B), ->R px => ->R $ swap-D _ px
+    | single C, ->L {A} {B} i l r => ->L i (swap-D _ l) (swap-D _ r)
+    | single ([] X A), []R p => []R $ swap-D _ p
+    | single C, []L {A} {X} i p => []L i $ swap-D ((A, X) :: D') p
+    | nil, nilctx => nilctx
+    | :: C R, ::ctx h t => ::ctx (swap-D _ h) (swap-D _ t)
+
+  \func swap-GH {T : \Set} {D : Valid T} {G R : Ctx T} {A' B' : Type T} :
+    SICML D (A' :: B' :: G) R ->  SICML D (B' :: A' :: G) R => swap-G nil
+
+  \func swap-DH {T : \Set} {D : Valid T} {G R X Y : Ctx T} {A B : Type T} :
+    SICML ((A, X) :: (B, Y) :: D) G R ->  SICML ((B, Y) :: (A, X) :: D) G R => swap-D nil
+
+  \func Weak-D {T : \Set} {D : Valid T}  {G Y R : Ctx T} {E : Type T} (p : SICML D G R): SICML ((E, Y) :: D) G R \elim R, p
+    | single (just _), init pc => init pc
+    | single C, reflect e px ac => reflect (there' e) (Weak-D px) (Weak-D ac)
+    | single (--> A B), ->R px => ->R $ Weak-D px
+    | single C, ->L i l r => ->L i (Weak-D l) (Weak-D r)
+    | single ([] X A), []R p => []R $ Weak-D p
+    | single C, []L i p => []L i $ swap-DH $ Weak-D p
+    | nil, nilctx => nilctx
+    | :: C R, ::ctx h t => ::ctx (Weak-D h) (Weak-D t)
+
+  \func Weak-G {T : \Set} {D : Valid T}  {G R : Ctx T} {E : Type T} (p : SICML D G R): SICML D (E :: G) R \elim R, p
+    | single (just _), init pc => init (Elem.there' pc)
+    | single C, reflect e px ac => reflect e (Weak-G px) $ swap-GH $ Weak-G ac
+    | single (--> A B), ->R px => ->R $ swap-GH $ Weak-G px
+    | single C, ->L i l r => ->L (there' i) (Weak-G l) (swap-GH $ Weak-G r)
+    | single ([] X A), []R p => []R p
+    | single C, []L i p => []L (there' i) $ Weak-G p
+    | nil, nilctx => nilctx
+    | :: C R, ::ctx h t => ::ctx (Weak-G h) (Weak-G t)
 }
 
 
