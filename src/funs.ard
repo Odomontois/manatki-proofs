@@ -2,3 +2,5 @@
 \func flip {A B C : \Type } (f : A -> B -> C)(b : B)(a : A) => f a b
 
 \data Compute {A : \Type} (a : A)
+
+\func \infixr 1 $ {A B : \Type} (f : A -> B ) (a : A) : B => f a

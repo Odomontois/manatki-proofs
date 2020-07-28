@@ -7,14 +7,14 @@
   | gp (x : X) : pi (f_0 x) = g_r x
 }
 
-\record LiftedWay {E B X : \Type} {pi : E -> B} (way : Way X pi) {
-  | f_1 : X -> E
-  | fp (x : X) : way.f_0 x = f_1 x
-  | fgp (x : X) : pmap pi (fp x) = way.gp x
-}
-
-\func LiftingProp {E B : \Type} (X : \Type) (pi : E -> B) : \Type =>
-  \Pi (way : Way X pi) -> LiftedWay way
+--\record LiftedWay {E B X : \Type} {pi : E -> B} (way : Way X pi) {
+--  | f_1 : X -> E
+--  | fp (x : X) : way.f_0 x = f_1 x
+--  | fgp (x : X) : pmap pi (fp x) = way.gp x
+--}
+--
+--\func LiftingProp {E B : \Type} (X : \Type) (pi : E -> B) : \Type =>
+--  \Pi (way : Way X pi) -> LiftedWay way
 
 --\record Fibration \extends Map
 --  | fibLifting : LiftingProp

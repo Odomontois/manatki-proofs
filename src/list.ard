@@ -20,6 +20,7 @@
   | nil
   | \infixr 6 :: (a : A) (tail : List A) \where {
   \cons single {A : \Type} (a : A) : List A => a :: nil
+  \func \infix 10 ## {A B : \Type} (f : List A -> B) (a : A) => f (single a)
 
   \lemma discriminate {A : \Type} {a : A} {t : List A} (p : nil = a :: t) : Empty => contradiction
 
@@ -168,7 +169,12 @@
 
 \func Elem {A : \Type} (e : A) (l : List A) => TruncP (Index e l) \where {
   \func hereidp {A : \Type} {a : A} {l : List A} : Elem a (a :: l) => here idp
-  \func hd {A : \Type} {a : A} {l : List A} : Elem a (a :: l) => here idp
+
+  \func @0 {A : \Type} {a : A} {l : List A} : Elem a (a :: l) => here idp
+
+  \func @1 {A : \Type} {a b : A} {l : List A}: Elem b (a :: b :: l) => at (fnat 1)
+
+  \func @2 {A : \Type} {a b c : A} {l : List A}: Elem c (a :: b :: c :: l) => at (fnat 2)
 
   \func at {A : \Type} {l : List A} (n : Fin (List.length l)) : Elem (List.at l n) l => TruncP.inP (Index.at n)
 

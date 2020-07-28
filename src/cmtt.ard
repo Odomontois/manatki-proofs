@@ -1,15 +1,17 @@
+\import funs
 \import list
+\import Function
 
 \data Type (T : \Set)
   | just T
-  | \infixr 3 --> (Type T) (Type T)
+  | \infixr 7 --> (Type T) (Type T)
   | [] (List (Type T)) (Type T)
 
 \func Ctx (T : \Set) : \Set => List (Type T)
 
 \func Valid (T : \Set) : \Set => List (\Sigma (Type T) (Ctx T))
 
-\func \infixr 4 []> {T : \Set} (A B : Type T) : Type T => [] (single A) B
+\cons \infixr 8 []> {T : \Set} (A B : Type T) : Type T => [] (single A) B
 
 \open List
 
@@ -26,23 +28,66 @@
 
   \open Elem
 
-  \func example-[1] {T : \Set} (C D A : Type T):  Stat (C []> A --> [] (C :: D :: nil) A) =>
-    I-> (E[] (single C) A (hyp hd) (I[] (ctxhyp hd (hyp hd))))
+  \func example-[1] {T : \Set} (C D A : Type T):  Stat $ C []> A --> [] (C :: D :: nil) A =>
+    I-> $ E[] (single C) A (hyp @0) $  I[] $ ctxhyp @0 $ hyp @0
 
-  \func example-[2] {T : \Set} (C D A : Type T): Stat ([] (C :: C :: nil) A --> C []> A) =>
-    I-> (E[] (C :: C :: nil) A (hyp hd) (I[] (ctxhyp  hd (ctx:: (hyp hd) (hyp hd)))))
+  \func example-[2] {T : \Set} (C D A : Type T): Stat $ [] (C :: C :: nil) A --> C []> A =>
+    I-> $ E[] (C :: C :: nil) A (hyp @0) $ I[] $ ctxhyp  @0 $ ctx:: (hyp @0) $ hyp @0
 
-  \func example-[3] {T : \Set} (A : Type T): Stat (A []> A) => I[] (hyp hd)
+  \func example-[3] {T : \Set} (A : Type T): Stat $ A []> A => I[] $ hyp @0
 
-  \func example-[4] {T : \Set} (A B C : Type T): Stat (A []> B --> A []>  B []>  C --> A []> C) =>
-    I-> (E[] (single A) B (hyp hd) (I-> (E[] (single A) ([] (single B) C) (hyp hd) (I[]
-        (E[] (single B) C (ctxhyp hd (hyp hd)) (
-          ctxhyp hd (ctxhyp (at (fnat 2)) (hyp hd))))))))
+  \func example-[4] {T : \Set} (A B C : Type T): Stat $ A []> B --> A []>  B []>  C --> A []> C =>
+    I->      $
+    E[] (single A) B (hyp @0) $
+    I-> $
+    E[] (single A) ([] (single B) C) (hyp @0) $
+    I[] $
+    E[] (single B) C (ctxhyp @0 (hyp @0)) $
+    ctxhyp @0 $ ctxhyp @2 (hyp @0)
 
   \func example-[5] {T : \Set} (A : Type T) : Stat (([] nil A)  --> A) =>
-    I-> (E[] nil A (hyp hd) (ctxhyp hd ctxnil))
+    I-> $ E[] nil A (hyp @0) (ctxhyp @0 ctxnil)
 
-  \func example-[6] {T : \Set} (A C D : Type T) : Stat (C []> A --> D []> C []> A) =>
-    I-> (E[] (single C) A (hyp hd) (I[] (I[] (ctxhyp hd (hyp hd)))))
+  \func example-[6] {T : \Set} (A C D : Type T) : Stat $ C []> A --> D []> C []> A =>
+    I-> $ E[] (single C) A (hyp @0) $ I[] $ I[] $ ctxhyp @0 (hyp @0)
 
+  \func example-[7] {T : \Set} (A B C D : Type T) : Stat $ C []> (A --> B) --> D []> A --> ([] (C :: D :: nil) B) =>
+    I-> $
+    I-> $
+    E[] (single C) (A --> B) (hyp @1) $
+    E[] (single D) A (hyp @0) $
+    I[] $
+    E-> A (ctxhyp @1 (hyp @0)) (ctxhyp @0 (hyp @1))
+
+  \func example-[8] {T : \Set} (A B C : Type T) : Stat $ A []> (A --> B) --> B []> C --> A []> C =>
+    I-> $
+    I-> $
+    E[] (single A) (A --> B) (hyp @1) $
+    E[] (single B) C (hyp @0) $
+    I[] $
+    ctxhyp @0 $
+    E-> A (ctxhyp @1 $ hyp @0) $ hyp @0
 }
+
+\data SICML {T : \Set} (D : Valid T) (G : Ctx T) (res : Ctx T) \elim D, G, res
+  | D, :: P G, single P' => init (P = P')
+  | (:: (A, X) D') \as D, G, single C => reflect (SICML D G X) (SICML D (A :: G) (single C))
+  | D, G, single (--> A B) => ->R (SICML D (A :: G) (single B))
+  | D, :: (--> A B) G, single C => ->L (SICML D (A --> B :: G) (single A)) (SICML D (B :: A --> B :: G ) (single C))
+  | D, G, single ([] X A) => []R (SICML D X (single A))
+  | D, :: ([] X A) G, single C => []L (ICML ((A, X) :: D) G (single C))
+  | D, G, nil => nilctx
+  | D, G, :: A R => ::ctx (ICML D G (single A)) (ICML D G R) \where {
+  \func \infix 2 ==> {T : \Set} (GD : \Sigma  (Valid T) (Ctx T)) (C : Type T) : \Set
+    | (D, G), C => SICML D G (single C)
+
+  \func Weakening {T : \Set} {D : Valid T}  {G X : Ctx T} {A C : Type T} (p : (D, G) ==> C) :
+    \Sigma (((A, X) :: D, G) ==> C) ((D, A :: G) ==> C) \elim D, G, C, p
+    | D, :: P G, C, init _ => ({?}, {?})
+    | :: (B, Y) D', G,  C, reflect _ _ => {?}
+    |  D, G, --> A B, ->R _ => {?}
+    | D, :: (--> A B) G, C, ->L _ _ => {?}
+    | _ , _, _ , _ => {?}
+}
+
+
