@@ -1,0 +1,48 @@
+\import list
+
+\data Type (T : \Set)
+  | just T
+  | \infixr 3 --> (Type T) (Type T)
+  | [] (List (Type T)) (Type T)
+
+\func Ctx (T : \Set) : \Set => List (Type T)
+
+\func Valid (T : \Set) : \Set => List (\Sigma (Type T) (Ctx T))
+
+\func \infixr 4 []> {T : \Set} (A B : Type T) : Type T => [] (single A) B
+
+\open List
+
+\data ICML {T : \Set} (D : Valid T) (G : Ctx T) (res : Ctx T) \elim res
+  | single A => hyp (Elem A G)
+  | single A => ctxhyp {X : Ctx T} (Elem (A, X) D) (ICML D G X)
+  | single (-->  A B) => I-> (ICML D (A :: G) (single B))
+  | single B => E-> (A : Type T) (ICML D G (single (A --> B))) (ICML D G (single A))
+  | single ([] X A) => I[] (ICML D X (single A))
+  | single C => E[] (X : Ctx T) (A : Type T) (ICML D G (single ([] X A))) (ICML ((A, X) :: D) G (single C))
+  | :: A B => ctx:: (ICML D G (single A)) (ICML D G B)
+  | nil => ctxnil \where {
+  \func Stat {T : \Set} (t : Type T) : \Set => ICML nil nil (single t)
+
+  \open Elem
+
+  \func example-[1] {T : \Set} (C D A : Type T):  Stat (C []> A --> [] (C :: D :: nil) A) =>
+    I-> (E[] (single C) A (hyp hd) (I[] (ctxhyp hd (hyp hd))))
+
+  \func example-[2] {T : \Set} (C D A : Type T): Stat ([] (C :: C :: nil) A --> C []> A) =>
+    I-> (E[] (C :: C :: nil) A (hyp hd) (I[] (ctxhyp  hd (ctx:: (hyp hd) (hyp hd)))))
+
+  \func example-[3] {T : \Set} (A : Type T): Stat (A []> A) => I[] (hyp hd)
+
+  \func example-[4] {T : \Set} (A B C : Type T): Stat (A []> B --> A []>  B []>  C --> A []> C) =>
+    I-> (E[] (single A) B (hyp hd) (I-> (E[] (single A) ([] (single B) C) (hyp hd) (I[]
+        (E[] (single B) C (ctxhyp hd (hyp hd)) (
+          ctxhyp hd (ctxhyp (at (fnat 2)) (hyp hd))))))))
+
+  \func example-[5] {T : \Set} (A : Type T) : Stat (([] nil A)  --> A) =>
+    I-> (E[] nil A (hyp hd) (ctxhyp hd ctxnil))
+
+  \func example-[6] {T : \Set} (A C D : Type T) : Stat (C []> A --> D []> C []> A) =>
+    I-> (E[] (single C) A (hyp hd) (I[] (I[] (ctxhyp hd (hyp hd)))))
+
+}

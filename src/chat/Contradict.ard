@@ -1,0 +1,21 @@
+\import Logic
+\import Logic.Meta
+\import Paths
+\import Paths.Meta
+
+\data Foo
+  | foo1
+  | foo2
+  | foo3
+  | foo12 (i : I) \elim i {
+    | left => foo1
+    | right => foo2
+  }
+--  | foo23 (i : I) \elim i {
+--    | left => foo2
+--    | right => foo3
+--  }
+
+\lemma foo1!=3 (p : foo1 = foo3) : Empty => contradiction
+--\func foo1=3 : foo1 = foo3 => path foo12 *> path foo23
+--\lemma boom : Empty => foo1!=3 foo1=3

@@ -1,0 +1,57 @@
+\import Arith.Nat
+\import Logic
+\import Logic.Meta
+\import Paths
+\import Paths.Meta
+
+\data Vect (n : Nat) (A : \Set)  \elim n
+  | 0 => VNil
+  | suc n => \infixr 5 :: A (Vect n A) \where {
+  \func remove {n : Nat} {A : \Set} {a : A} (v : Vect (suc n) A) (i : Index a v) : Vect n A \elim n, v, i
+    | n, :: b t, Here p => t
+    | suc n, :: b t, There i => b :: remove t i
+    | 0, :: _ VNil, There j => contradiction
+}
+
+\data Index {n : Nat} {A : \Set} (a : A) (v : Vect n A) \elim n, v
+  | suc n, :: b _ => Here (a = b)
+  | suc n, :: _ t => There (Index a t) \where {
+  \func unthere {n : Nat} {A : \Set} {a e : A} {v : Vect n A} (i : Index e v) (j : Index e (a :: v)) : Index e v \elim j
+    | Here _ => i
+    | There i' => i'
+
+  \lemma injective {n : Nat} {A : \Set} {a e : A} {v : Vect n A} {i j : Index e v}
+                   (p : There i = {Index e (a :: v)} There j) : i = j => pmap (unthere i) p
+}
+
+\func uniqueElems {n : Nat} {A : \Set} (v : Vect n A) : \Prop =>
+  \Pi (e : A) (i j : Index e v) -> i = j \where {
+  \lemma empty {A : \Set} (v : Vect 0 A) (e : A) (i j : Index e v) : i = j
+
+  \lemma single {A : \Set} (v : Vect 1 A) (e : A) (i j : Index e v) : i = j
+    | :: a VNil, e, Here p, Here p1 => pmap Here (Path.inProp _ _)
+    | :: a VNil, e, There i, _ => contradiction
+    | :: a VNil, e, _, There j => contradiction
+
+  \lemma insert {A : \Set} {n : Nat} (a : A) (v : Vect n A) (u : uniqueElems v) (ni : Not (Index a v))
+    : uniqueElems (a :: v) \elim n, v
+    | 0, VNil => single _
+    | suc n, :: b t => \lam e i1 i2 => \case i1 \as j1, i2 \as j2 \return (j1 = j2) \with {
+      | Here p1, Here p2 => pmap Here (Path.inProp _ _)
+      | Here p, There i => absurd (ni (rewriteF p i))
+      | There i, Here p => absurd (ni (rewriteF p i))
+      | There i, There i1 => pmap There (u e i i1)
+    }
+
+  \lemma remove {A : \Set} {n : Nat} {a : A} (v : Vect (suc n) A) (i : Index a v) (u : uniqueElems v)
+    : uniqueElems (Vect.remove {n} {A} {a} v i) \elim n, v, i
+    | suc n', :: b t, Here p => \lam e j1 j2 => Index.injective (u e (There j1) (There j2))
+    | 0 , :: b VNil, Here p => empty VNil
+    | suc n, :: b t, There i => \lam e j1 j2 =>  {?}
+    | 0, :: a1 VNil, There _ => contradiction
+}
+
+\func UVect (n : Nat) (A : \Set) : \Set => \Sigma (v : Vect n A) (uniqueElems v) \where {
+  \func insert {n : Nat} {A : \Set} (a : A) (v : UVect n A) (p : Not (Index a v.1)) : UVect (suc n) A =>
+    (a :: v.1, uniqueElems.insert a v.1 v.2 p)
+}

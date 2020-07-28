@@ -4,8 +4,12 @@
 \import Logic
 \import Logic.Meta
 \import Paths
+\import Set.Fin
 \import monoid
+
+--\import Algebra.Monoid (+)
 --\import order
+
 \import Function
 \import Order.LinearOrder
 \import Order.PartialOrder
@@ -15,15 +19,21 @@
 \data List (A : \Type)
   | nil
   | \infixr 6 :: (a : A) (tail : List A) \where {
+  \cons single {A : \Type} (a : A) : List A => a :: nil
+
   \lemma discriminate {A : \Type} {a : A} {t : List A} (p : nil = a :: t) : Empty => contradiction
 
   \lemma head-monotone {A : \Set} {la : Poset A} (a b : A) (as : List A) (p : a <= b) : head a as <= head b as \elim as
     | nil => p
-    | :: c _ => <=-reflexive c
+    | :: c _ => <=-reflexive
 
   \func head {A : \Type} (a : A) (l : List A) : A \elim l
     | nil => a
     | :: b _ => b
+
+  \func at {A : \Type} (l : List A) (n : Fin (length l)) : A \elim l,n
+    | :: a tail, fzero => a
+    | :: a tail, fsuc n => at tail n
 
   \func tail {A : \Type} (l : List A) : List A \elim l
     | nil => nil
@@ -57,7 +67,7 @@
     | :: a' tail => minimum (join a a') tail
     \where {
       \lemma unordered {A : \Set} {to : JoinSemilattice A} (a a' : A) (as : List A) :
-        minimum a (a' :: as) = minimum a' (a :: as) => pmap (\lam x => minimum x as) (join-comm _ _)
+        minimum a (a' :: as) = minimum a' (a :: as) => pmap (\lam x => minimum x as) join-comm
     }
 
   \func reverse {A : \Type} (l : List A) : List A
@@ -122,6 +132,10 @@
 \data Index {A : \Type} (e : A) (l : List A) \elim l
   | :: h t => Here (e = h)
   | :: h t => There (Index e t) \where {
+  \func at {A : \Type} {l : List A} (n : Fin (List.length l)) : Index (List.at l n) l \elim l,n
+    | :: a tail, fzero => Here idp
+    | :: a tail, fsuc n => There (at n)
+
   \func no-nil {A B : \Type} (a : A) (eq : Index a nil) : B
 
   \func here!=there {A B : \Type} {e h : A} {t : List A}
@@ -153,10 +167,24 @@
 }
 
 \func Elem {A : \Type} (e : A) (l : List A) => TruncP (Index e l) \where {
+  \func hereidp {A : \Type} {a : A} {l : List A} : Elem a (a :: l) => here idp
+  \func hd {A : \Type} {a : A} {l : List A} : Elem a (a :: l) => here idp
+
+  \func at {A : \Type} {l : List A} (n : Fin (List.length l)) : Elem (List.at l n) l => TruncP.inP (Index.at n)
+
   \cons here {A : \Type} {a h : A} {l : List A} (p : a = h) : Elem a (h :: l) => TruncP.inP (Index.Here p)
 
   \cons there {A : \Type} {a h : A} {l : List A} (e : Index a l) : Elem a (h :: l) => TruncP.inP (Index.There e)
+
+  \func there' {A : \Type} {a h : A} {l : List A} (e : Elem a l) : Elem a (h :: l) \elim e
+    | inP i => TruncP.inP (Index.There i)
 }
+
+\open Nat (+)
+
+\func fnat {n : Nat} (m : Nat): Fin (suc (n + m)) \elim m
+  | 0 => fzero
+  | suc m => fsuc (fnat m)
 
 
 
