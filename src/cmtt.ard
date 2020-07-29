@@ -161,18 +161,29 @@
   \func Cut {T : \Set} {D : Valid T}  {I : Type T} {G R : Ctx T}
             (p1 : (D, G) ==> I) (p2 : SICML D (I :: G) R) : SICML D G R \elim I, R, p1, p2
     | I, nil, p1, nilctx => nilctx
-    | I, :: C (:: C' R), p1, ::ctx p2 r => ::ctx (Cut p1 p2) (Cut p1 r)
+    | I, :: C R, p1, ::ctx p2 r => ::ctx (Cut p1 p2) (Cut p1 r)
     | I, R, ::ctx p1 nilctx, p2 => Cut p1 p2
     | just _ , single (just _), init i,  init j => init $ Index.squash-0 i j
     | I, single C, reflect {A} i l r, p2 => reflect i l $ Cut r $ swap-head {sym-G} $ Weak-G p2
-    | just _ , single C, init i,  reflect j l r => reflect j {?} {?}
-    | just _ , single C, init i,  p2 => {?}
+    | just _ , single C, init i,  reflect {A} j l r => reflect j (Contract-g nil i l) (Contract-g (single A) i r)
+    | just _ , single (--> A B), init i,  ->R p2 => ->R (Contract-g (single A) i p2)
+    | just _ , single C, init i,  ->L {A} {B} j l r => \case j \with {
+      | There j' => ->L j' (Contract-g nil i l) (Contract-g (single B) i r)
+      | Here p => contradiction
+    }
+
+    | just _ , single C, init i,  []L j p2 => []L (squash-0 i j) $ Contract-g nil i p2
+    | --> A B, single (just _), ->R px, init j => init ( \case j \with {
+      | Here p => contradiction
+      | There j' => j'
+    })
+    | --> A B, single C, ->R px, reflect {E} {X} j l r => reflect j (Cut (->R px) l) $ {?}
     | --> A B, single C, ->R px, p2 => {?}
     | I, single (--> A B), p1, ->R p2 => {?}
     | [] X I, single C, []R p1, p2 => {?}
     |  I, single C, ->L i l r, p2 => ->L i l $ Cut r $ swap-head {sym-G} $ Weak-G p2
     | I, single C, p1 , []L i p2 => {?}
-    |  I, single C, p1, ->L i l r => {?}
+    | I, single C, p1, ->L i l r => {?}
     | I, single ([] X R), p1, []R p2 => []R p2
     | I, single C, []L i p1, p2 => []L i $ Cut p1 $ Weak-D p2
 
