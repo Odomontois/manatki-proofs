@@ -1,3 +1,5 @@
+\import Logic
+\import Logic.Meta
 \import Paths
 \import Paths.Meta
 \import funs
@@ -17,12 +19,12 @@
 \cons \infixr 8 []> {T : \Set} (A B : Type T) : Type T => [] (single A) B
 
 \open List \hiding (at)
-\open Elem \hiding (at, swap)
+\open Index \hiding (at, swap-head, swap)
 \open Symmetry
 
 \data ICML {T : \Set} (D : Valid T) (G R : Ctx T) \elim R
-  | single A => hyp (Elem A G)
-  | single A => ctxhyp {X : Ctx T} (Elem (A, X) D) (ICML D G X)
+  | single A => hyp (Index A G)
+  | single A => ctxhyp {X : Ctx T} (Index (A, X) D) (ICML D G X)
   | single (-->  A B) => I-> (ICML D (A :: G) (single B))
   | single B => E-> (A : Type T) (ICML D G (single (A --> B))) (ICML D G (single A))
   | single ([] X A) => I[] (ICML D X (single A))
@@ -73,12 +75,12 @@
 }
 
 \data SICML {T : \Set} (D : Valid T) (G R : Ctx T) \elim R
-  | single (just _ \as p)  => init (Elem p G)
-  | single C => reflect {A : Type T} {X : Ctx T} (Elem (A, X) D) (SICML D G X) (SICML D (A :: G) (single C))
+  | single (just _ \as p)  => init (Index p G)
+  | single C => reflect {A : Type T} {X : Ctx T} (Index (A, X) D) (SICML D G X) (SICML D (A :: G) (single C))
   | single (--> A B) => ->R (SICML D (A :: G) (single B))
-  | single C => ->L {A B : Type T} (Elem (A --> B) G) (SICML D G (single A)) (SICML D (B :: G) (single C))
+  | single C => ->L {A B : Type T} (Index (A --> B) G) (SICML D G (single A)) (SICML D (B :: G) (single C))
   | single ([] X A) => []R (SICML D X (single A))
-  | single C => []L {A : Type T} {X : Ctx T} (Elem ([] X A) G) (SICML ((A, X) :: D) G (single C))
+  | single C => []L {A : Type T} {X : Ctx T} (Index ([] X A) G) (SICML ((A, X) :: D) G (single C))
   | nil => nilctx
   | :: A R => ::ctx (SICML D G (single A)) (SICML D G R) \where {
   \func \infix 2 ==> {T : \Set} (GD : \Sigma  (Valid T) (Ctx T)) (C : Type T) : \Set
@@ -86,19 +88,19 @@
 
   \func swap-G {T : \Set} {D : Valid T} {G R : Ctx T} (G' : Ctx T) {A' B' : Type T}
                (p : SICML D (G' ++ A' :: B' :: G) R) : SICML D (G' ++ B' :: A' :: G) R \elim R, p
-    | single (just _ \as p), init i => init $ Elem.swap i
+    | single (just _ \as p), init i => init $ Index.swap i
     | single C, reflect {A} e1 px ac => reflect e1 (swap-G _ px) $ swap-G (A :: G') ac
     | single (--> A B), ->R px => ->R $ swap-G (A :: G') px
-    | single C, ->L {A} {B} i l r => ->L (Elem.swap i) (swap-G _ l) (swap-G (B :: G') r)
+    | single C, ->L {A} {B} i l r => ->L (Index.swap i) (swap-G _ l) (swap-G (B :: G') r)
     | single ([] X A), []R p => []R p
-    | single C, []L {A} i p => []L (Elem.swap i) (swap-G _ p)
+    | single C, []L {A} i p => []L (Index.swap i) (swap-G _ p)
     | nil, nilctx => nilctx
     | :: C R, ::ctx h t => ::ctx (swap-G _ h) (swap-G _ t)
 
   \func swap-D {T : \Set} {D : Valid T} {G R X Y : Ctx T} (D' : Valid T) {A' B' : Type T}
                (p : SICML (D' ++ (A', X) :: (B', Y) :: D) G R) : SICML (D' ++ (B', Y) :: (A', X) :: D) G R \elim R, p
     | single (just _ \as p), init i => init  i
-    | single C, reflect {A} e1 px ac => reflect (Elem.swap e1) (swap-D _ px) (swap-D _ ac)
+    | single C, reflect {A} e1 px ac => reflect (Index.swap e1) (swap-D _ px) (swap-D _ ac)
     | single (--> A B), ->R px => ->R $ swap-D _ px
     | single C, ->L {A} {B} i l r => ->L i (swap-D _ l) (swap-D _ r)
     | single ([] X A), []R p => []R $ swap-D _ p
@@ -114,7 +116,7 @@
 
   \func Weak-D {T : \Set} {D : Valid T}  {G Y R : Ctx T} {E : Type T} (p : SICML D G R): SICML ((E, Y) :: D) G R \elim R, p
     | single (just _), init pc => init pc
-    | single C, reflect e px ac => reflect (there' e) (Weak-D px) (Weak-D ac)
+    | single C, reflect e px ac => reflect (There e) (Weak-D px) (Weak-D ac)
     | single (--> A B), ->R px => ->R $ Weak-D px
     | single C, ->L i l r => ->L i (Weak-D l) (Weak-D r)
     | single ([] X A), []R p => []R $ Weak-D p
@@ -123,12 +125,12 @@
     | :: C R, ::ctx h t => ::ctx (Weak-D h) (Weak-D t)
 
   \func Weak-G {T : \Set} {D : Valid T}  {G R : Ctx T} {E : Type T} (p : SICML D G R): SICML D (E :: G) R \elim R, p
-    | single (just _), init pc => init (Elem.there' pc)
+    | single (just _), init pc => init (There pc)
     | single C, reflect e px ac => reflect e (Weak-G px) $ swap-head {sym-G} $ Weak-G ac
     | single (--> A B), ->R px => ->R $ Symmetry.swap-head {sym-G} $ Weak-G px
-    | single C, ->L i l r => ->L (there' i) (Weak-G l) $ swap-head {sym-G} $ Weak-G r
+    | single C, ->L i l r => ->L (There i) (Weak-G l) $ swap-head {sym-G} $ Weak-G r
     | single ([] X A), []R p => []R p
-    | single C, []L i p => []L (there' i) $ Weak-G p
+    | single C, []L i p => []L (There i) $ Weak-G p
     | nil, nilctx => nilctx
     | :: C R, ::ctx h t => ::ctx (Weak-G h) (Weak-G t)
 
@@ -139,6 +141,45 @@
     | ::  ([] X A) R =>
       ::ctx ([]L @0 $ []R $ reflect @0 (transport (SICML _ __ X) (List.++nil X) Identity) Identity) $
       pull-head {sym-G} Identity
+
+  \func IdentIn {T : \Set} {D : Valid T} {G : Ctx T} {C : Type T} (e : Index C G) : (D, G) ==> C \elim G, e
+    | :: A G, Here e => transport (\lam x => SICML D (x :: G) _) e Identity
+    | :: A G, There e => Weak-G $ IdentIn e
+
+  \func Contract-g {T : \Set} {D : Valid T} {G R : Ctx T} {A' : Type T} (G' : Ctx T) (e : Index A' G) (p : SICML D (G' ++ A' :: G) R) :
+    SICML D (G' ++ G) R \elim R, e, p
+    | single (just _), e, init i => init $ squash e i
+    | single C, e, reflect {A} i l r =>
+      reflect i (Contract-g G' e l) $ Contract-g (A :: G') e r
+    | single (--> A B), e, ->R p => ->R $ Contract-g (A :: G') e p
+    | single C, e, ->L {A} {B} i l r => ->L (squash e i) (Contract-g G' e l) $ Contract-g (B :: G') e r
+    | single ([] A B), e, []R p => []R p
+    | single C, e, []L i p => []L (squash e i) $ Contract-g G' e p
+    | nil , e, nilctx => nilctx
+    | :: C R , e, ::ctx p pr => ::ctx (Contract-g G' e p) (Contract-g G' e pr)
+
+  \func Cut {T : \Set} {D : Valid T}  {I : Type T} {G R : Ctx T}
+            (p1 : (D, G) ==> I) (p2 : SICML D (I :: G) R) : SICML D G R \elim I, R, p1, p2
+    | I, nil, p1, nilctx => nilctx
+    | I, :: C (:: C' R), p1, ::ctx p2 r => ::ctx (Cut p1 p2) (Cut p1 r)
+    | I, R, ::ctx p1 nilctx, p2 => Cut p1 p2
+    | just _ , single (just _), init i,  init j => init $ Index.squash-0 i j
+    | I, single C, reflect {A} i l r, p2 => reflect i l $ Cut r $ swap-head {sym-G} $ Weak-G p2
+    | just _ , single C, init i,  reflect j l r => reflect j {?} {?}
+    | just _ , single C, init i,  p2 => {?}
+    | --> A B, single C, ->R px, p2 => {?}
+    | I, single (--> A B), p1, ->R p2 => {?}
+    | [] X I, single C, []R p1, p2 => {?}
+    |  I, single C, ->L i l r, p2 => ->L i l $ Cut r $ swap-head {sym-G} $ Weak-G p2
+    | I, single C, p1 , []L i p2 => {?}
+    |  I, single C, p1, ->L i l r => {?}
+    | I, single ([] X R), p1, []R p2 => []R p2
+    | I, single C, []L i p1, p2 => []L i $ Cut p1 $ Weak-D p2
+
+  --    | single C, reflect i l r => reflect i (Cut p1 l) $ Cut (Weak-G p1) $ swap-head {sym-G} r
+
+  --    | just t, single (just t'), init e, init e' => init $ squash e e'
+  --    | _ , _, _ , _ => {?}
 
   -- []L @0 $ []R $ reflect @0 {?} {?}
 }

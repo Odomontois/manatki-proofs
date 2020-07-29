@@ -4,7 +4,9 @@
 \import Logic
 \import Logic.Meta
 \import Paths
+\import Paths.Meta
 \import Set.Fin
+\import funs
 \import list.symmetry
 \import monoid
 
@@ -170,6 +172,22 @@
       | There e' => e'
     }
     \in pmap f p
+
+  \func @0 {A : \Type} {a : A} {l : List A} : Index a (a :: l) => Here idp
+
+  \func @1 {A : \Type} {a b : A} {l : List A}: Index b (a :: b :: l) => at (fnat 1)
+
+  \func @2 {A : \Type} {a b c : A} {l : List A}: Index c (a :: b :: c :: l) => at (fnat 2)
+
+  \func squash-0 {A : \Type} {e e' : A} {l : List A} (p1 : Index e l) (p2 : Index e' (e :: l)) : Index e' l \elim l, p1, p2
+    | :: a l, Here p1, Here p2 => Here $ p2 *> p1
+    | :: a l, _, There p2 => p2
+    | :: a l, There i1, Here p2 => There $ transportInv (Index __ l) p2 i1
+
+  \func squash {A : \Type} {e e' : A} {l l' : List A} (p1 : Index e l) (p2 : Index e' (l' ++ e :: l)) : Index e' (l' ++ l) \elim l', p2
+    | nil, p2 => squash-0 p1 p2
+    | :: a l', Here p2 => Here p2
+    | :: a l', There p2 => There $ squash p1 p2
 }
 
 \instance elemDecEq {A : DecSet} {e : A} {l : List A} : DecSet.Impl (Index e l)
@@ -211,6 +229,12 @@
 
   \lemma swap {A : \Type} {a b e : A} {l l' : List A} (i : Elem e (l' ++ a :: b :: l)) : Elem e (l' ++ b :: a :: l)
     | inP idx => inP (Index.swap idx)
+
+  \lemma squash {A : \Type} {e e' : A} {l : List A} (p1 : Elem e l) (p2 : Elem e' (e :: l)) : Elem e' l \elim l, p1, p2
+    | :: a l, here p1, here p2 => here $ p2 *> p1
+    | :: a l, _, there p2 => inP p2
+    | :: a l, there i1, here p2 => there $ transportInv (Index __ l) p2 i1
+    | nil, inP p1, p2 => contradiction
 }
 
 \open Nat (+)
