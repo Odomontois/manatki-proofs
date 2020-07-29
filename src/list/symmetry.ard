@@ -1,0 +1,39 @@
+\import Paths
+\import funs
+\import list
+\open  List
+
+\record Symmetry {A : \Type} (P : List A -> \Type) {
+  | swap {l l' : List A} {a a' : A} : P (l ++ a :: a' :: l') -> P (l ++ a' :: a :: l')
+
+  \func swap-head {l : List A} {a a' : A} : P (a :: a' :: l) ->  P (a' :: a :: l) => swap {\this} {nil}
+
+  \func exchange {l l' l'' : List A} {a a' : A} (b : P(l ++ a :: l' ++ a' :: l'')) : P (l ++ a' :: l' ++ a :: l'') \elim  l'
+    | nil => swap b
+    | :: c l' =>
+      swap $
+      transport P (List.assoc l (single c) _) $
+      exchange $
+      transportInv P (List.assoc l (single c) _) $
+      swap b
+
+  \func push {l l' l'' : List A} {a : A} (p : P (l ++ a :: (l' ++ l''))) : P (l ++ l' ++ a :: l'') \elim l'
+    | nil => p
+    | :: c l' =>
+      transport P (List.assoc l (single c) _ ) $
+      push $
+      transportInv P (List.assoc l (single c) _ ) $
+      swap p
+
+  \func push-head {l l' : List A} {a : A} : P (a :: (l ++ l')) -> P (l ++ a :: l') => push {_} {nil}
+
+  \func pull {l l' l'' : List A} {a : A} (p : P (l ++ l' ++ a :: l'')) : P (l ++ a :: (l' ++ l'')) \elim l'
+    | nil => p
+    | :: c l' =>
+      swap $
+      transport P (List.assoc l (single c) _ ) $
+      pull $
+      transportInv P (List.assoc l (single c) _ ) p
+
+  \func pull-head {l l' : List A} {a : A} : P (l ++ a :: l') -> P (a :: (l ++ l')) => pull {_} {nil}
+}

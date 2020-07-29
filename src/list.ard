@@ -5,6 +5,7 @@
 \import Logic.Meta
 \import Paths
 \import Set.Fin
+\import list.symmetry
 \import monoid
 
 --\import Algebra.Monoid (+)
@@ -150,6 +151,9 @@
     | :: c l', Here p => Here p
     | :: c l', There i => There (swap i)
 
+  \func index-sym {A : \Type} {e : A} : Symmetry (Index e) \cowith
+    | swap p => swap p
+
   \func no-nil {A B : \Type} (a : A) (eq : Index a nil) : B
 
   \func here!=there {A B : \Type} {e h : A} {t : List A}
@@ -200,8 +204,10 @@
   \lemma there' {A : \Type} {a h : A} {l : List A} (e : Elem a l) : Elem a (h :: l) \elim e
     | inP i => TruncP.inP (Index.There i)
 
-  \lemma swap-head {A : \Type} {a b e : A} {l : List A} (i : Elem e (a :: b :: l)) : Elem e (b :: a :: l)
-    | inP idx => inP (Index.swap-head idx)
+  \func elemSym {A : \Type} {e : A} : Symmetry (Elem e) \cowith
+    | swap p => \case p \with {
+      | inP idx => inP (Index.swap idx)
+    }
 
   \lemma swap {A : \Type} {a b e : A} {l l' : List A} (i : Elem e (l' ++ a :: b :: l)) : Elem e (l' ++ b :: a :: l)
     | inP idx => inP (Index.swap idx)

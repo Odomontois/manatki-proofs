@@ -3,6 +3,7 @@
 \import funs
 \import list
 \import Function
+\import list.symmetry
 
 \data Type (T : \Set)
   | just T
@@ -16,7 +17,8 @@
 \cons \infixr 8 []> {T : \Set} (A B : Type T) : Type T => [] (single A) B
 
 \open List \hiding (at)
-\open Elem \hiding (at)
+\open Elem \hiding (at, swap)
+\open Symmetry
 
 \data ICML {T : \Set} (D : Valid T) (G R : Ctx T) \elim R
   | single A => hyp (Elem A G)
@@ -104,67 +106,11 @@
     | nil, nilctx => nilctx
     | :: C R, ::ctx h t => ::ctx (swap-D _ h) (swap-D _ t)
 
-  \func exchange-G {T : \Set} {D : Valid T} {G R : Ctx T} (G' G'' : Ctx T) {A B : Type T}
-                   (p : SICML D (G' ++ A :: G'' ++ B :: G) R) : SICML D (G' ++ B :: G'' ++ A :: G) R \elim G''
-    | nil => swap-G G' p
-    | :: C G'' =>
-      swap-G G' $
-      transport (SICML D __ R) (List.assoc G' (single C) _) $
-      exchange-G _ _ $
-      transportInv (SICML D __ R) (List.assoc G' (single C) _) $
-      swap-G G' p
+  \func sym-G {T : \Set} {D : Valid T} {R : Ctx T}: Symmetry (SICML D __ R) \cowith
+    | swap p => swap-G _ p
 
-  \func exchange-D {T : \Set} {D : Valid T} {G R X Y : Ctx T} (D' D'' : Valid T) {A B : Type T}
-                   (p : SICML (D' ++ (A, X) :: D'' ++ (B, Y) :: D) G R) : SICML (D' ++ (B, Y) :: D'' ++ (A, X) :: D) G R \elim D''
-    | nil => swap-D D' p
-    | :: (C, Z) D'' =>
-      swap-D D' $
-      transport (SICML __ G R) (List.assoc D' (single (C, Z)) _) $
-      exchange-D _ _ $
-      transportInv (SICML __ G R) (List.assoc D' (single (C, Z)) _) $
-      swap-D D' p
-
-  \func move-G {T : \Set} {D : Valid T} {G R : Ctx T} (G' G'' : Ctx T) {A : Type T}
-               (p : SICML D (G' ++ A :: (G'' ++ G)) R) : SICML D (G' ++ G'' ++ A :: G) R \elim G''
-    | nil => p
-    | :: B G'' =>
-      transport (SICML D __ R ) (List.assoc G' (single B) _ ) $
-      move-G (G' ++ single B) G'' $
-      transportInv (SICML D __ R) (List.assoc G' (single B) _ ) $
-      swap-G G' p
-
-  \func move-G' {T : \Set} {D : Valid T} {G R : Ctx T} (G' G'' : Ctx T) {A : Type T}
-                (p : SICML D (G' ++ G'' ++ A :: G) R) : SICML D (G' ++ A :: (G'' ++ G)) R  \elim G''
-    | nil => p
-    | :: B G'' =>
-      swap-G G' $
-      transport (SICML D __ R) (List.assoc G' (single B) _ ) $
-      move-G' (G' ++ single B) G'' $
-      transportInv (SICML D __ R ) (List.assoc G' (single B) _ ) p
-
-  \func move-D {T : \Set} {D : Valid T} {G R X : Ctx T} (D' D'' : Valid T) {A : Type T}
-               (p : SICML (D' ++ (A, X) :: (D'' ++ D)) G R) : SICML (D' ++ D'' ++ (A, X) :: D) G R \elim D''
-    | nil => p
-    | :: (B, Y) D'' =>
-      transport (SICML __ G R ) (List.assoc D' (single (B, Y)) _ ) $
-      move-D (D' ++ single (B, Y)) D'' $
-      transportInv (SICML __ G R) (List.assoc D' (single (B, Y)) _ ) $
-      swap-D D' p
-
-  \func move-D' {T : \Set} {D : Valid T} {G R X : Ctx T} (D' D'' : Valid T) {A : Type T}
-                (p : SICML (D' ++ D'' ++ (A, X) :: D) G R) : SICML (D' ++ (A, X) :: (D'' ++ D)) G R \elim D''
-    | nil => p
-    | :: (B, Y) D'' =>
-      swap-D D' $
-      transport (SICML __ G R ) (List.assoc D' (single (B, Y)) _ ) $
-      move-D' (D' ++ single (B, Y)) D'' $
-      transportInv (SICML __ G R) (List.assoc D' (single (B, Y)) _ ) p
-
-  \func swap-GH {T : \Set} {D : Valid T} {G R : Ctx T} {A' B' : Type T} :
-    SICML D (A' :: B' :: G) R ->  SICML D (B' :: A' :: G) R => swap-G nil
-
-  \func swap-DH {T : \Set} {D : Valid T} {G R X Y : Ctx T} {A B : Type T} :
-    SICML ((A, X) :: (B, Y) :: D) G R ->  SICML ((B, Y) :: (A, X) :: D) G R => swap-D nil
+  \func sym-D {T : \Set} {G R : Ctx T}: Symmetry (SICML __ G R) \cowith
+    | swap p => swap-D _ p
 
   \func Weak-D {T : \Set} {D : Valid T}  {G Y R : Ctx T} {E : Type T} (p : SICML D G R): SICML ((E, Y) :: D) G R \elim R, p
     | single (just _), init pc => init pc
@@ -172,15 +118,15 @@
     | single (--> A B), ->R px => ->R $ Weak-D px
     | single C, ->L i l r => ->L i (Weak-D l) (Weak-D r)
     | single ([] X A), []R p => []R $ Weak-D p
-    | single C, []L i p => []L i $ swap-DH $ Weak-D p
+    | single C, []L i p => []L i $ swap-head {sym-D} $ Weak-D p
     | nil, nilctx => nilctx
     | :: C R, ::ctx h t => ::ctx (Weak-D h) (Weak-D t)
 
   \func Weak-G {T : \Set} {D : Valid T}  {G R : Ctx T} {E : Type T} (p : SICML D G R): SICML D (E :: G) R \elim R, p
     | single (just _), init pc => init (Elem.there' pc)
-    | single C, reflect e px ac => reflect e (Weak-G px) $ swap-GH $ Weak-G ac
-    | single (--> A B), ->R px => ->R $ swap-GH $ Weak-G px
-    | single C, ->L i l r => ->L (there' i) (Weak-G l) (swap-GH $ Weak-G r)
+    | single C, reflect e px ac => reflect e (Weak-G px) $ swap-head {sym-G} $ Weak-G ac
+    | single (--> A B), ->R px => ->R $ Symmetry.swap-head {sym-G} $ Weak-G px
+    | single C, ->L i l r => ->L (there' i) (Weak-G l) $ swap-head {sym-G} $ Weak-G r
     | single ([] X A), []R p => []R p
     | single C, []L i p => []L (there' i) $ Weak-G p
     | nil, nilctx => nilctx
@@ -188,9 +134,11 @@
 
   \func Identity {T : \Set} {D : Valid T} {G R : Ctx T}  : SICML D (R ++ G) R \elim R
     | nil => nilctx
-    | :: (just t) R => ::ctx (init @0) $ move-G' nil R Identity
-    | :: (--> A B) R => {?} -- ->R $ ->L @1 Identity Identity
-    | ::  ([] X A) R => {?}
+    | :: (just t) R => ::ctx (init @0) $ pull-head {sym-G} Identity
+    | :: (--> A B) R => ::ctx (->R $ ->L @1 Identity Identity) $ pull-head {sym-G} Identity
+    | ::  ([] X A) R =>
+      ::ctx ([]L @0 $ []R $ reflect @0 (transport (SICML _ __ X) (List.++nil X) Identity) Identity) $
+      pull-head {sym-G} Identity
 
   -- []L @0 $ []R $ reflect @0 {?} {?}
 }
