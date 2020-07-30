@@ -348,6 +348,17 @@
         (max a.1 b.1 , bump-up left-max a.2, bump-up right-max b.2)
     }
 
+  \func erase {T : \Set} {n : Nat}{D : Valid T} {G R : Ctx T} (us : SICML n D G R) : Seq.SICML D G R  \elim  n, R, us
+    | n, nil, nilctx => Seq.nilctx
+    | n, single (just _ ), init p1 => Seq.init p1
+    | suc n, single C, reflect i l r => Seq.reflect i (erase l) (erase r)
+    | suc n, single (--> A B),  ->R p => Seq.->R (erase p)
+    | suc n, single C , ->L i l r => Seq.->L i (erase l) (erase r)
+    | suc n, single ([] X A), []R p => Seq.[]R (erase p)
+    | suc n, single C, []L i p => Seq.[]L i (erase p)
+    | n, :: A R, ::ctx h t => Seq.::ctx (erase h) (erase t)
+    | suc n, R , bump p => erase p
+
   \func Identity {T : \Set} {D : Valid T} {G R : Ctx T}  : \Sigma (n : Nat) (SICML n D (R ++ G) R) =>
     enumerate Seq.SICML.Identity
 
