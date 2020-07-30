@@ -1,0 +1,35 @@
+\import Arith.Nat
+\import Order.PartialOrder
+\import Order.Lattice
+\import Algebra.Monoid
+\import Paths
+\open Nat (zero<=_, suc<=suc)
+\import Category
+\open Precat
+
+\func diff {n m : Nat} (p : n <= m) : \Sigma (x : Nat) (n + x = m) \elim n, m, p
+  | 0, m, zero<=_ => (m, zro-left)
+  | suc n, suc m, suc<=suc p => \let (k, p') => diff p \in (k, +-assoc {_} {n} {1} *> pmap (+ n) +-comm *> pmap suc p')
+
+\func max (n m : Nat) : Nat \elim n, m
+  | 0, m => m
+  | suc n, 0 => suc n
+  | suc n, suc m => suc (max n m)
+
+\func left-max {n m : Nat} : n <= max n m \elim n, m
+  | 0, m => zero<=_
+  | suc n, 0 => <=-reflexive
+  | suc n, suc m => suc<=suc left-max
+
+\func right-max {n m : Nat} : m <= max n m \elim n, m
+  | 0, m => <=-reflexive
+  | suc n, 0 => zero<=_
+  | suc n, suc m => suc<=suc right-max
+
+\func max3 (n m k : Nat) : Nat => max (max n m) k
+
+\lemma left-max3 (n m k : Nat) : n <= max3 n m k => left-max >> left-max
+
+\lemma right-max3 (n m k : Nat) : k <= max3 n m k => right-max
+
+\lemma mid-max3 (n m k : Nat) : m <= max3 n m k => right-max >> left-max

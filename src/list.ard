@@ -153,7 +153,7 @@
     | :: c l', Here p => Here p
     | :: c l', There i => There (swap i)
 
-  \func index-sym {A : \Type} {e : A} : Symmetry (Index e) \cowith
+  \func index-sym {A : \Type} {e : A} : Exchange (Index e) \cowith
     | swap p => swap p
 
   \func no-nil {A B : \Type} (a : A) (eq : Index a nil) : B
@@ -192,13 +192,17 @@
   \func squash-in {A : \Type} {e e' : A} {l l' : List A} (p1 : Index e (l ++ l')) (p2 : Index e' ( l ++ e :: l')) : Index e' (l ++ l') \elim l, p1, p2
     | nil, p1, p2 => squash-0 p1 p2
     | :: a l, p1, Here p2 => Here p2
-    | :: a l, Here p1 , There p2 => Symmetry.pull-head {index-sym} $ transport (\lam x => Index e' (l ++ x :: l')) p1 p2
+    | :: a l, Here p1 , There p2 => Exchange.pull-head {index-sym} $ transport (\lam x => Index e' (l ++ x :: l')) p1 p2
     | :: a l, There p1, There p2 => There $ squash-in p1 p2
 
   \func squash {A : \Type} {e e' : A} {l l' l'' : List A} (p1 : Index e (l' ++ l'')) (p2 : Index e' ( l ++ l' ++ e :: l'')) : Index e' (l ++ l' ++ l'') \elim l, p1, p2
     | nil, p1, p2 => squash-in p1 p2
     | :: a l, p1, Here p2 => Here p2
     | :: a l, p1, There p2 => There $ squash p1 p2
+
+  \func \infixr 8 index++ {A : \Type} {e : A} (l : List A) {l' : List A} (i : Index e l') : Index e (l ++ l') \elim l
+    | nil => i
+    | :: a l => There $ l index++ i
 }
 
 \instance elemDecEq {A : DecSet} {e : A} {l : List A} : DecSet.Impl (Index e l)
@@ -233,7 +237,7 @@
   \lemma there' {A : \Type} {a h : A} {l : List A} (e : Elem a l) : Elem a (h :: l) \elim e
     | inP i => TruncP.inP (Index.There i)
 
-  \func elemSym {A : \Type} {e : A} : Symmetry (Elem e) \cowith
+  \func elemSym {A : \Type} {e : A} : Exchange (Elem e) \cowith
     | swap p => \case p \with {
       | inP idx => inP (Index.swap idx)
     }

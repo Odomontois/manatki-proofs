@@ -3,7 +3,9 @@
 \import list
 \open  List
 
-\record Symmetry {A : \Type} (P : List A -> \Type) {
+\record BaseStruct {A : \Type} (P : List A -> \Type)
+
+\record Exchange \extends BaseStruct {
   | swap {l l' : List A} {a a' : A} : P (l ++ a :: a' :: l') -> P (l ++ a' :: a :: l')
 
   \func swap-head {l : List A} {a a' : A} : P (a :: a' :: l) ->  P (a' :: a :: l) => swap {\this} {nil}
@@ -38,6 +40,16 @@
   \func pull-head {l l' : List A} {a : A} : P (l ++ a :: l') -> P (a :: (l ++ l')) => pull {_} {nil}
 }
 
-\record Weakening \extends Symmetry{
+\record Weakening \extends BaseStruct{
   | weak {l : List A} {a : A} (p : P l) : P (a :: l)
+
+  \func weakMany {l l' : List A} (p : P l) : P (l' ++ l) \elim l'
+    | nil => p
+    | :: a l' => weak $ weakMany p
 }
+
+\record Contraction \extends BaseStruct{
+  | contract {l l' : List A} {a : A} (i : Index a l) (p : P (l' ++ a :: l)) : P (l' ++ l)
+}
+
+\record Structural \extends Exchange, Weakening, Contraction
