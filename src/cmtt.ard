@@ -5,7 +5,7 @@
 \import funs
 \import list
 \import Function
-\import list.symmetry
+\import list.structural
 
 \data Type (T : \Set)
   | just T
@@ -148,13 +148,13 @@
 
   \func Contract-g {T : \Set} {D : Valid T} {G R : Ctx T} {A' : Type T} (G' : Ctx T) (e : Index A' G) (p : SICML D (G' ++ A' :: G) R) :
     SICML D (G' ++ G) R \elim R, e, p
-    | single (just _), e, init i => init $ squash e i
+    | single (just _), e, init i => init $ squash-with e i
     | single C, e, reflect {A} i l r =>
       reflect i (Contract-g G' e l) $ Contract-g (A :: G') e r
     | single (--> A B), e, ->R p => ->R $ Contract-g (A :: G') e p
-    | single C, e, ->L {A} {B} i l r => ->L (squash e i) (Contract-g G' e l) $ Contract-g (B :: G') e r
+    | single C, e, ->L {A} {B} i l r => ->L (squash-with e i) (Contract-g G' e l) $ Contract-g (B :: G') e r
     | single ([] A B), e, []R p => []R p
-    | single C, e, []L i p => []L (squash e i) $ Contract-g G' e p
+    | single C, e, []L i p => []L (squash-with e i) $ Contract-g G' e p
     | nil , e, nilctx => nilctx
     | :: C R , e, ::ctx p pr => ::ctx (Contract-g G' e p) (Contract-g G' e pr)
 
@@ -176,7 +176,7 @@
       | Here p => contradiction
       | There j' => j'
     })
-    | --> A B, single C, ->R px, reflect {E} {X} j l r => reflect j (Cut-0 (->R px) l) $ {?}
+    | I , single C, p1, reflect {E} {X} j l r => reflect j (Cut-0 p1 l) $ {?}
     |  I, single C, ->L i l r, p2 => ->L i l $ Cut-0 r $ swap-head {sym-G} $ Weak-G p2
     | I, single ([] X R), p1, []R p2 => []R p2
     | I, single C, []L i p1, p2 => []L i $ Cut-0 p1 $ Weak-D p2
@@ -184,24 +184,25 @@
     | I, single (--> A B), p1, ->R p2 => {?}
     | [] X I, single C, []R p1, p2 => {?}
 
-  \func Cut {T : \Set} {D : Valid T}  {I : Type T} {G G' R : Ctx T}
-            (p1 : (D, G ++ G') ==> I) (p2 : SICML D (G ++ I :: G') R) : SICML D (G ++ G') R \elim I, R, p1, p2
-    | I, nil, p1, nilctx => nilctx
-    | I, :: C R, p1, ::ctx p2 r => ::ctx (Cut p1 p2) (Cut p1 r)
-    | I, R, ::ctx p1 nilctx, p2 => Cut p1 p2
-    | just _ , single (just _), init i,  init j => {?}
-    | I, single C, reflect {A} i l r, p2 => {?}
-    | just _ , single C, init i,  reflect {A} j l r => {?}
-    | just _ , single (--> A B), init i,  ->R p2 => {?}
-    | just _ , single C, init i,  ->L {A} {B} j l r => {?}
-    | just _ , single C, init i,  []L j p2 => {?}
-    | --> A B, single C, ->R px, reflect {E} {X} j l r => {?}
-    |  I, single C, ->L i l r, p2 => {?}
-    | I, single ([] X R), p1, []R p2 => []R p2
-    | I, single C, []L i p1, p2 => {?}
-    | --> A B, single C, ->R px, p2 => {?}
-    | I, single (--> A B), p1, ->R p2 => {?}
-    | [] X I, single C, []R p1, p2 => {?}
+  \func WCut {T : \Set} {D : Valid T}  (G : Ctx T) {I : Type T} {G' G'' R : Ctx T}
+            (p1 : (D, G' ++ G'') ==> I) (p2 : SICML D (G ++ G' ++ I :: G'') R) : SICML D (G ++ G' ++ G'') R \elim G, I, R, p1, p2
+
+    | G, I, nil, p1, nilctx => nilctx
+    | G, I, :: C R, p1, ::ctx p2 r => ::ctx (WCut G p1 p2) (WCut G p1 r)
+    | G, I, R, ::ctx p1 nilctx, p2 => WCut G p1 p2
+    | G, I , single C, p1, reflect {E} {X} j l r =>  reflect j (WCut G p1 l) $ WCut (E :: G) p1 r
+    | G, just t , single (just u), init i,  init j => init $ squash i j
+    | G, I, single C, reflect {A} i l r, p2 => {?}
+    | G, just _ , single C, init i,  reflect {A} j l r => {?}
+    | G, just _ , single (--> A B), init i,  ->R p2 => {?}
+    | G, just _ , single C, init i,  ->L {A} {B} j l r => {?}
+    | G, just _ , single C, init i,  []L j p2 => {?}
+    | G,  I, single C, ->L i l r, p2 => {?}
+    | G, I, single ([] X R), p1, []R p2 => []R p2
+    | G, I, single C, []L i p1, p2 => {?}
+    | G, --> A B, single C, ->R px, p2 => {?}
+    | G, I, single (--> A B), p1, ->R p2 => {?}
+    | G, [] X I, single C, []R p1, p2 => {?}
 
 
 

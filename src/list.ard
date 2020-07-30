@@ -7,7 +7,7 @@
 \import Paths.Meta
 \import Set.Fin
 \import funs
-\import list.symmetry
+\import list.structural
 \import monoid
 
 --\import Algebra.Monoid (+)
@@ -184,10 +184,21 @@
     | :: a l, _, There p2 => p2
     | :: a l, There i1, Here p2 => There $ transportInv (Index __ l) p2 i1
 
-  \func squash {A : \Type} {e e' : A} {l l' : List A} (p1 : Index e l) (p2 : Index e' (l' ++ e :: l)) : Index e' (l' ++ l) \elim l', p2
+  \func squash-with {A : \Type} {e e' : A} {l l' : List A} (p1 : Index e l) (p2 : Index e' (l' ++ e :: l)) : Index e' (l' ++ l) \elim l', p2
     | nil, p2 => squash-0 p1 p2
     | :: a l', Here p2 => Here p2
-    | :: a l', There p2 => There $ squash p1 p2
+    | :: a l', There p2 => There $ squash-with p1 p2
+
+  \func squash-in {A : \Type} {e e' : A} {l l' : List A} (p1 : Index e (l ++ l')) (p2 : Index e' ( l ++ e :: l')) : Index e' (l ++ l') \elim l, p1, p2
+    | nil, p1, p2 => squash-0 p1 p2
+    | :: a l, p1, Here p2 => Here p2
+    | :: a l, Here p1 , There p2 => Symmetry.pull-head {index-sym} $ transport (\lam x => Index e' (l ++ x :: l')) p1 p2
+    | :: a l, There p1, There p2 => There $ squash-in p1 p2
+
+  \func squash {A : \Type} {e e' : A} {l l' l'' : List A} (p1 : Index e (l' ++ l'')) (p2 : Index e' ( l ++ l' ++ e :: l'')) : Index e' (l ++ l' ++ l'') \elim l, p1, p2
+    | nil, p1, p2 => squash-in p1 p2
+    | :: a l, p1, Here p2 => Here p2
+    | :: a l, p1, There p2 => There $ squash p1 p2
 }
 
 \instance elemDecEq {A : DecSet} {e : A} {l : List A} : DecSet.Impl (Index e l)

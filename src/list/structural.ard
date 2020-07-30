@@ -37,3 +37,7 @@
 
   \func pull-head {l l' : List A} {a : A} : P (l ++ a :: l') -> P (a :: (l ++ l')) => pull {_} {nil}
 }
+
+\record Weakening \extends Symmetry{
+  | weak {l : List A} {a : A} (p : P l) : P (a :: l)
+}
