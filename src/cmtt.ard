@@ -337,7 +337,7 @@
 
     \func Cut {T : \Set} {k n : Nat} {D : Valid T} {I : Type T} {G R : Ctx T}
               (p1 : SICML k D G (single I)) (p2 : SICML n D (I :: G) R) : SICML! D G R \elim k, n, I, R, p1, p2
-      --- BOLERPLATE TECH PART . SKIP IT ---
+      --- BOLERPLATE START. SKIP IT ---
       | suc k, n, I, R,  bump p1, p2 => Cut p1 p2
       | k, suc n, I , R, p1, bump p => Cut p1 p
       | k, n, I, single C, ::ctx p1 _, p2 => Cut p1 p2
@@ -364,6 +364,7 @@
       | suc k, n, [] X A, single (just _), []R p1, init (There j) => init! j
       | suc k, suc n, I, single C, p1, ->L {A'} {B'} (There j) l r =>
         ->L! j (Cut p1 l) $ Cut (Weak-G p1) (swap-head {sG} r)
+      -- substitution part, stolen from clayrat
       | suc k, suc n, --> A B , single C, ->R p1, ->L {A'} {B'} (Here e) l r =>
         \let | (pa, pb) => Type.inject-> e
              | l' => transport (SICML n D (A --> B :: G) $ single __) pa l
