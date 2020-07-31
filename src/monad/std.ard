@@ -85,3 +85,6 @@
          | internal (wa : \Sigma W A) => inv (l2=l1 wa) *> path (\lam i => mm.flatMap (f wa.2) (\lam wb => (l2i=r2i wa.1 wb) @ i)) *> r2=r1 wa
     \in path(\lam i => mm.flatMap fa (\lam wa => internal wa @ i)) *> mm.assocmonad fa (_) tail
 }
+
+
+\import Data.List
