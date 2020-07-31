@@ -2,6 +2,8 @@
 \import funs
 \import list
 \open  List
+\import Function
+\open Exchange
 
 \record BaseStruct {A : \Type} (P : List A -> \Type)
 
@@ -49,7 +51,11 @@
 }
 
 \record Contraction \extends BaseStruct{
-  | contract {l l' : List A} {a : A} (i : Index a l) (p : P (l' ++ a :: l)) : P (l' ++ l)
+  | contract {l : List A} {a : A} (l' : List A) (i : Index a l) (p : P (l' ++ a :: l)) : P (l' ++ l)
+
+  \func contract0 {l : List A} {a : A}  : Index a l -> P (a :: l) -> P l => contract nil
 }
 
-\record Structural \extends Exchange, Weakening, Contraction
+\record Structural \extends Exchange, Weakening, Contraction{
+  \func weak-in {l : List A} {a : A} (l' : List A) : P (l' ++ l) -> P (l' ++ a :: l) => push-head o weak
+}

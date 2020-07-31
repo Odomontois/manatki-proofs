@@ -10,6 +10,10 @@
 \import Arith.Nat
 \import Order.PartialOrder
 \import Algebra.Monoid
+\import Category (Precat)
+\open Precat (>>)
+\open Structural
+\open Contraction
 
 \data Type (T : \Set)
   | just T
@@ -316,12 +320,12 @@
   \func sG {T : \Set} {n : Nat} {D : Valid T} {R : Ctx T}: Structural (SICML n D __ R) \cowith
     | swap p => swap-G _ p
     | weak p => Weak-G p
-    | contract p => Contract-G _ p
+    | contract l => Contract-G l
 
   \func sD {T : \Set} {n : Nat} {G R : Ctx T}: Structural (SICML n __ G R) \cowith
     | swap p => swap-D _ p
     | weak p => Weak-D p
-    | contract p => Contract-D _ p
+    | contract l => Contract-D l
 
   \open Nat (zero<=_, suc<=suc)
 
@@ -333,20 +337,49 @@
     \let (k, p') => diff p
     \in transport (SICML __ D G R) p' $ s bump+ k
 
-  \func enumerate {T : \Set} {D : Valid T} {G R : Ctx T} (us : Seq.SICML D G R) : \Sigma (n : Nat) (SICML n D G R)  \elim  R, us
-    | nil, Seq.nilctx => (0, nilctx)
-    | single (just _ ), Seq.init p1 => (0, init p1)
-    | single C, Seq.reflect i l r => \let (n, sl, sr) => unify (enumerate l) (enumerate r) \in (suc n, reflect i sl sr)
-    | single (--> A B),  Seq.->R p => \let (n, s) => enumerate p \in (suc n, ->R s)
-    | single C , Seq.->L i l r => \let (n, sl, sr) => unify (enumerate l) (enumerate r) \in (suc n, ->L i sl sr)
-    | single ([] X A), Seq.[]R p => \let (n, s) => enumerate p \in (suc n, []R s)
-    | single C, Seq.[]L i p => \let (n, s) => enumerate p \in (suc n, []L i s)
-    | :: A R, Seq.::ctx h t => \let (n, sh, st) => unify (enumerate h) (enumerate t) \in (n, ::ctx sh st)
-    \where {
-      \func unify {T : \Set} {D D' : Valid T} {G G' R R' : Ctx T} (a : \Sigma (n : Nat) (SICML n D G R)) (b : \Sigma (n : Nat) (SICML n D' G' R')):
-        (\Sigma (n : Nat) (SICML n D G R) (SICML n D' G' R')) =>
-        (max a.1 b.1 , bump-up left-max a.2, bump-up right-max b.2)
-    }
+  \func unify {T : \Set} {D D' : Valid T} {G G' R R' : Ctx T} (a : \Sigma (n : Nat) (SICML n D G R)) (b : \Sigma (n : Nat) (SICML n D' G' R')):
+    (\Sigma (n : Nat) (SICML n D G R) (SICML n D' G' R')) =>
+    (max a.1 b.1 , bump-up left-max a.2, bump-up right-max b.2)
+
+  \func SICML! {T : \Set} (D : Valid T) (G R : Ctx T) => \Sigma  (n : Nat) (SICML n D G R)
+
+  \func init! {T : \Set} {D : Valid T} {G : Ctx T} {P : T} (p : Index (just P) G) :  SICML! D G (single (just P)) =>
+    (0, init p)
+
+  \func reflect! {T : \Set} {D : Valid T} {G X : Ctx T} {A C : Type T}
+                 (i : Index (A, X) D) (l : SICML! D G X) (r : SICML! D (A :: G) (single C)) : SICML! D G (single C) =>
+    \let (n, sl, sr) => unify l r \in (suc n, reflect i sl sr)
+
+  \func ->R! {T : \Set} {D : Valid T} {G : Ctx T} {A B : Type T} (p : SICML! D (A :: G) (single B)) : SICML! D G $ single $ A --> B =>
+    \let (n, s) => p \in (suc n, ->R s)
+
+  \func ->L! {T : \Set} {D : Valid T} {G : Ctx T} {A B C : Type T}
+             (i : Index (A --> B) G) (l : SICML! D G (single A)) (r : SICML! D (B :: G) (single C)) : SICML! D  G (single C) =>
+    \let (n, sl, sr) => unify l r \in (suc n, ->L i sl sr )
+
+  \func []R! {T : \Set} {D : Valid T} {G X : Ctx T} {A : Type T}
+             (p : SICML! D X (single A)) : SICML! D G $ single $ [] X A =>
+    \let (n, r) => p \in (suc n, []R r)
+
+  \func []L! {T : \Set} {D : Valid T} {G X : Ctx T} {A C : Type T}
+             (i : Index ([] X A) G) (p : SICML! ((A, X) :: D) G (single C)) : SICML! D G (single C) =>
+    \let (n, p') => p \in (suc n, []L i p')
+
+  \func nilctx! {T : \Set} {D : Valid T} {G : Ctx T} : SICML! D G nil => (0, nilctx)
+
+  \func ::ctx! {T : \Set} {D : Valid T} {G R : Ctx T} {A : Type T}
+               (h : SICML! D G (single A)) (t : SICML! D G R) : SICML! D G (A :: R) =>
+    \let (n, sh, st) => unify h t \in (n, ::ctx sh st)
+
+  \func enumerate {T : \Set} {D : Valid T} {G R : Ctx T} (us : Seq.SICML D G R) : SICML! D G R  \elim  R, us
+    | nil, Seq.nilctx => nilctx!
+    | single (just _ ), Seq.init p1 => init! p1
+    | single C, Seq.reflect i l r => reflect! i (enumerate l) (enumerate r)
+    | single (--> A B),  Seq.->R p => ->R! $ enumerate p
+    | single C , Seq.->L i l r => ->L! i (enumerate l) (enumerate r)
+    | single ([] X A), Seq.[]R p => []R! $ enumerate p
+    | single C, Seq.[]L i p => []L! i $ enumerate p
+    | :: A R, Seq.::ctx h t => ::ctx! (enumerate h) (enumerate t)
 
   \func erase {T : \Set} {n : Nat}{D : Valid T} {G R : Ctx T} (us : SICML n D G R) : Seq.SICML D G R  \elim  n, R, us
     | n, nil, nilctx => Seq.nilctx
@@ -362,10 +395,77 @@
   \func Identity {T : \Set} {D : Valid T} {G R : Ctx T}  : \Sigma (n : Nat) (SICML n D (R ++ G) R) =>
     enumerate Seq.SICML.Identity
 
-  --  []L @0 $ []R $ reflect @0 (transport (SICML _ _ __ X) (List.++nil X) Identity) Identity
+  \func Cut' {T : \Set} {D : Valid T} {I : Type T} {G R : Ctx T}
+             (p1 : SICML! D G (single I)) (p2 : SICML! D (I :: G) R) : SICML! D G R \elim I, R, p1, p2
+    | I , single C, (k, p1), (suc n, reflect  j l r) => reflect! j (Cut' (k, p1) (n, l)) (Cut' (k, weak {sG} p1) (n, swap-head {sG} r))
+    | I, R, (suc k, bump p1), p2 => Cut' (k, p1) p2
+    | I, :: C R, p1, (n, ::ctx p2 r) => ::ctx! (Cut' p1 (n, p2)) (Cut' p1 (n, r))
+    | I , R, p1, (suc n, bump p) => Cut' p1 (n, p)
+    | I, R, (k, ::ctx p1 nilctx), p2 => Cut' (k, p1) p2
+    | I , single (--> A B), (k, p1), (suc n, ->R p) => ->R! $ Cut' (k, Weak-G p1) (n, swap-head {sG} p)
+    | I , single ([] X A), p1, (suc n, []R p) => []R! (n, p)
+    | I, single C, (suc k, ->L {A} {B} i l r), (n, p2) => ->L! i (k, l) {?} -- $ Cut (k, r) {?} -- (n, swap-head {sG} $ Weak-G p2)
+    | I , single C, p1, (suc n, ->L i l r) => {?}
+    | I , single C, p1, (suc n, []L i p) => {?}
+    | I, single (just _), p1 , (n, init i) => {?}
+    | I, nil, p1, (n, nilctx) => nilctx!
+    | just _ , R, (k, init i), p2 => {?}
+
+  \func Cut {T : \Set} {k n : Nat} {D : Valid T} {I : Type T} {G R : Ctx T}
+            (p1 : SICML k D G (single I)) (p2 : SICML n D (I :: G) R) : SICML! D G R \elim k, n, I, R, p1, p2
+    | k, suc n, I , single C, p1, reflect  j l r => reflect! j (Cut  p1  l) $ Cut (weak {sG} p1) $ swap-head {sG} r
+    | suc k, n, I , single C , reflect {A} j l r, p2 => reflect! j (k, l) $ Cut r $ weak-in {sG} (single I) p2
+    | suc k, n, I, R,  bump p1, p2 => Cut  p1 p2
+    | k, n, I, :: C R, p1, ( ::ctx p2 r) => ::ctx! (Cut p1 p2) (Cut p1 r)
+    | k, suc n, I , R, p1, bump p => Cut p1 p
+    | k, n, I, R, ::ctx p1 nilctx, p2 => Cut p1 p2
+    | k, suc n, I , single (--> A B), p1, ->R p => ->R! $ Cut (weak {sG} p1) (swap-head {sG} p)
+    | k, suc n, I , single ([] X A), p1,  []R p => []R! (n, p)
+    | suc k, n, I, single C, ->L {A} {B} i l r, p2 => ->L! i (k, l) $ Cut r $ swap-head {sG} $ weak {sG} p2
+    | suc k, n, I, single C, []L {A} i p1, p2 => []L! i $ Cut p1 $ weak {sD} p2
+    | k, n, just _ , single (just _), init i, init j => init! $ squash-0 i j
+    | k, suc n, just _ , single C, init i, ->L (Here p) l r => contradiction
+    | k, suc n, just _ , single C, init i, ->L {A} {B} (There j) l r =>
+      ->L! j (n, contract0 {sG} i l) (n, contract {sG} (single B) i r)
+    | k, suc n, just _ , single C, init i, []L j p => []L! (squash-0 i j) (n, contract0 {sG} i p)
+    | k, suc n, I , single C, p1, ->L i l r => {?}
+    | k, suc n, I , single C, p1, []L i p => {?}
+    | k, n, I, single (just _), p1 , init i => {?}
+    | k, n, I, nil, p1, nilctx => nilctx!
+
+  -- ->L i l $ Cut-0 r $ swap-head {sym-G} $ Weak-G p2
+
+  -- reflect j (Cut-0 p1 l) $ {?}
 
 
+  --    | suc n, I , single C, p1, reflect {E} {X} j l r => {?} -- reflect j (Cut-0 p1 l) $ {?}
+  --    | suc n, I, single ([] X R), p1, []R p2 => {?} -- []R p2
+  --    | suc n, I, single C, []L i p1, p2 => {?} --  []L i $ Cut-0 p1 $ Weak-D p2
+  --    | suc n, --> A B, single C, ->R px, p2 => {?}
+  --    | suc n, I, single (--> A B), p1, ->R p2 => {?}
+  --    | suc n, [] X I, single C, []R p1, p2 => {?}
 
+  --    | I, R, (n, ::ctx p1 nilctx), p2 => Cut-0 (n, p1) p2
+  --    | n, just _ , single (just _), init i,  init j => {?} -- init $ Index.squash-0 i j
+  --    | suc n, I, single C, reflect {A} i l r, p2 => {?} -- reflect i (bump l) $ Cut-0 (bump r) $ swap-head {sym-G} $ Weak-G p2
+  --    | suc n, just _ , single C, init i,  reflect {A} j l r => {?} -- reflect j (Contract-G nil i l) (Contract-G (single A) i r)
+  --    | suc n, just _ , single (--> A B), init i,  ->R p2 => {?} -- ->R (Contract-g (single A) i p2)
+  --    | suCutc n, just _ , single C, init i,  ->L {A} {B} j l r => {?} -- \case j \with {
+  --    --      | There j' => ->L j' (Contract-g nil i l) (Contract-g (single B) i r)
+  --    --      | Here p => contradiction
+  --    --    }
+  --    | suc n, just _ , single C, init i,  []L j p2 => {?} -- []L (squash-0 i j) $ Contract-g nil i p2
+  --    | suc n, --> A B, single (just _), ->R px, init j => {?} -- init ( \case j \with {
+  --    --      | Here p => contradiction
+  --    --      | There j' => j'
+  --    --    })
+  --    | suc n, I , single C, p1, reflect {E} {X} j l r => {?} -- reflect j (Cut-0 p1 l) $ {?}
+  --    | suc n,  I, single C, ->L i l r, p2 => {?} -- ->L i l $ Cut-0 r $ swap-head {sym-G} $ Weak-G p2
+  --    | suc n, I, single ([] X R), p1, []R p2 => {?} -- []R p2
+  --    | suc n, I, single C, []L i p1, p2 => {?} --  []L i $ Cut-0 p1 $ Weak-D p2
+  --    | suc n, --> A B, single C, ->R px, p2 => {?}
+  --    | suc n, I, single (--> A B), p1, ->R p2 => {?}
+  --    | suc n, [] X I, single C, []R p1, p2 => {?}
 }
 
 

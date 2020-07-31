@@ -33,3 +33,4 @@
 \lemma right-max3 (n m k : Nat) : k <= max3 n m k => right-max
 
 \lemma mid-max3 (n m k : Nat) : m <= max3 n m k => right-max >> left-max
+
