@@ -45,6 +45,10 @@
 \record Weakening \extends BaseStruct{
   | weak {l : List A} {a : A} (p : P l) : P (a :: l)
 
+  \func flood (l : List A) (p : P nil) : P l \elim l
+    | nil => p
+    | :: a l => weak $ flood l p
+
   \func weakMany {l l' : List A} (p : P l) : P (l' ++ l) \elim l'
     | nil => p
     | :: a l' => weak $ weakMany p

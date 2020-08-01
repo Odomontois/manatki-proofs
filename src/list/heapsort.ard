@@ -1,0 +1,15 @@
+\import Order.Lattice
+\import Order.LinearOrder
+\import Arith.Nat
+
+\data BHeap
+  | Empty
+  | One Nat
+  | Two Nat Nat
+  | Branch BHeap BHeap \where {
+  \func insert (n : Nat) (t : BHeap): BHeap \elim t
+    | Empty => One Nat
+    | One a => \case
+    | Two a a1 => {?}
+    | Branch t1 t2 => {?}
+}

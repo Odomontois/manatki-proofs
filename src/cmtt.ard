@@ -13,6 +13,7 @@
 \import Category (Precat)
 \open Precat (>>)
 \open Structural
+\open Weakening
 \open Contraction
 
 \data Type (T : \Set)
@@ -142,9 +143,9 @@
     \func Contract-g {T : \Set} {D : Valid T} {G R : Ctx T} {A' : Type T} (G' : Ctx T) (e : Index A' G) (p : SICML D (G' ++ A' :: G) R) :
       SICML D (G' ++ G) R => NSeq.erase $ NSeq.Contract-G G' e $ (NSeq.enumerate p).2
 
-    \func Cut-0 {T : \Set} {D : Valid T}  {I : Type T} {G R : Ctx T}
-                (p1 : (D, G) ==> I) (p2 : SICML D (I :: G) R) : SICML D G R =>
-      NSeq.erase $ (NSeq.Cut (NSeq.enumerate p1).2 (NSeq.enumerate p2).2).2
+    --    \func Cut-0 {T : \Set} {D : Valid T}  {I : Type T} {G R : Ctx T}
+    --                (p1 : (D, G) ==> I) (p2 : SICML D (I :: G) R) : SICML D G R =>
+    --      NSeq.erase $ (NSeq.Cut (NSeq.enumerate p1).2 (NSeq.enumerate p2).2).2
   }
 
   \module NSeq \where{
@@ -363,25 +364,34 @@
         \in CCut p1 t1
 
     \func CCut {T : \Set} {k n : Nat} {D : Valid T} {I : Type T} {G M R : Ctx T}
-               (p1 : SICML k D M (single I)) (p2 : SICML n ((I, M) :: D) G R) : SICML! D G R \elim k, n, I, R, p1, p2
-      | suc k, n, I, R,  bump p1, p2 => CCut p1 p2
-      | k, suc n, I , R, p1, bump p => CCut p1 p
-      | k, n, I, single C, ::ctx p1 _, p2 => CCut p1 p2
-      | 0, n, I, single C, p1,  ::ctx p2 _ => CCut p1 p2
-      | suc k, n, I, single C, p1,  ::ctx p2 _ => CCut p1 p2
-      | k, n, I, :: C R, p1,  ::ctx p2 r => ::ctx! (CCut p1 p2) (CCut p1 r)
-      | k, n, I, nil, p1, nilctx => nilctx!
+               (p1 : SICML k D M (single I)) (p2 : SICML n ((I, M) :: D) G R) : SICML! D G R \elim k, n, I, M, R, p1, p2
+      | suc k, , I, M, R,  bump p1, p2 => CCut p1 p2
+      | suc k, n, I, M, R,  bump p1, p2 => CCut p1 p2
+
+      | k, suc n, I, M, R, p1, bump p => CCut p1 p
+      | k, n, I, M, single C, ::ctx p1 _, p2 => CCut p1 p2
+      | 0, n, I, M, single C, p1,  ::ctx p2 _ => CCut p1 p2
+      | suc k, n, I, M, single C, p1,  ::ctx p2 _ => CCut p1 p2
+      | k, n, I, M, :: C R, p1,  ::ctx p2 r => ::ctx! (CCut p1 p2) (CCut p1 r)
+      | k, n, I, M, nil, p1, nilctx => nilctx!
       -- boilerplate end --
-      | k, suc n, I, single (--> A B), p1, ->R p2 => ->R! $ CCut p1 p2
-      | k, suc n, I, single ([] X A), p1, []R p2 => []R! $ CCut p1 p2
-      | k, suc n, I, single C, p1, ->L i l r => ->L! i (CCut p1 l) (CCut p1 r)
-      | k, suc n, I, single C, p1, []L i p2 => []L! i $ CCut (Weak-D p1) $ swap-head {sD} p2
-      | k, n, I, single (just _), p1, init i => init! i
-
-      | k, suc n, I, single C, p1, reflect i l r => {?}
-
-      | k, n, just _, R, init i, p2 => {?}
-
+      | k, suc n, I, M, single (--> A B), p1, ->R p2 => ->R! $ CCut p1 p2
+      | k, suc n, I, M, single ([] X A), p1, []R p2 => []R! $ CCut p1 p2
+      | k, suc n, I, M, single C, p1, ->L i l r => ->L! i (CCut p1 l) (CCut p1 r)
+      | k, suc n, I, M, single C, p1, []L i p2 => []L! i $ CCut (Weak-D p1) $ swap-head {sD} p2
+      | k, n, I, M, single (just _), p1, init i => init! i
+      | k, suc n, I, M, single C, p1, reflect (There j) l r => reflect! j (CCut p1 l) (CCut p1 r)
+      | k, suc n, I, nil, single C, p1, reflect (Here p) l r =>
+        \let | r' => transport (\lam x => SICML n _ (x :: G) _) (pmap (__.1) p) r
+             | (_, r'') => CCut p1 r'
+             | p1' => flood {sG} G p1
+        \in Cut p1' r''
+      | k, suc n, I, UM, single C, p1, reflect (Here p) l r =>
+        \let | l' => transport (SICML n _ _ __) (pmap (__.2) p) l
+             | r' => transport (\lam a => SICML n _ (a :: G) _) (pmap (__.1) p) r
+             | l'' => CCut p1 l'
+             | r'' => CCut p1 r'
+        \in {?}
   }
 }
 
