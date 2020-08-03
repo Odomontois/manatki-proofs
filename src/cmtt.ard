@@ -316,7 +316,7 @@
     \func Identity {T : \Set} {D : Valid T} {G R : Ctx T}  : \Sigma (n : Nat) (SICML n D (R ++ G) R) =>
       enumerate Seq.SICML.Identity
 
-    \func Cut {T : \Set} {k n : Nat} {D : Valid T} {I : Type T} {G R : Ctx T}
+    \sfunc Cut {T : \Set} {k n : Nat} {D : Valid T} {I : Type T} {G R : Ctx T}
               (p1 : SICML k D G (single I)) (p2 : SICML n D (I :: G) R) : SICML! D G R \elim k, n, I, R, p1, p2
       --- BOLERPLATE START. SKIP IT ---
       | suc k, n, I, R,  bump p1, p2 => Cut p1 p2
@@ -363,11 +363,9 @@
              | (_, t1) => Cut (Weak-D ([]R p1)) p2'
         \in CCut p1 t1
 
-    \func CCut {T : \Set} {k n : Nat} {D : Valid T} {I : Type T} {G M R : Ctx T}
+    \sfunc CCut {T : \Set} {k n : Nat} {D : Valid T} {I : Type T} {G M R : Ctx T}
                (p1 : SICML k D M (single I)) (p2 : SICML n ((I, M) :: D) G R) : SICML! D G R \elim k, n, I, M, R, p1, p2
-      | suc k, , I, M, R,  bump p1, p2 => CCut p1 p2
       | suc k, n, I, M, R,  bump p1, p2 => CCut p1 p2
-
       | k, suc n, I, M, R, p1, bump p => CCut p1 p
       | k, n, I, M, single C, ::ctx p1 _, p2 => CCut p1 p2
       | 0, n, I, M, single C, p1,  ::ctx p2 _ => CCut p1 p2

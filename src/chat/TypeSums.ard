@@ -11,7 +11,7 @@
 
 \func \infixl 7 t* (A B : \Type) => \Sigma A B
 
-\data \infixl 5 t+ (A B : \Type)
+\data \infixl 5 t+ (A B : \Type \lp \lh)
   | inl A
   | inr B
 
@@ -76,6 +76,7 @@
 }
 
 \record T+-assoc (a b c : \Type){
+
   \func SL => a t+ b t+ c
 
   \func SR => a t+ (b t+ c)
@@ -100,12 +101,12 @@
     | inl (inr b) => idp
     | inr  c => idp
 
-  \func assoc : SL = SR => QEquiv-to-= \new QEquiv {
     | f => to
     | ret => from
     | ret_f => from-to
     | f_sec => to-from
-  }
+
+--  \func assoc : SL = SR => QEquiv-to-= \this
 }
 
 \record T*+-distrib (a b c : \Type){
