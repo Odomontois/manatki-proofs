@@ -1,0 +1,137 @@
+\import Data.Bool
+\import Data.Or
+\import HLevel
+\import Logic
+\import Order.Lattice
+\import Order.LinearOrder
+\import Arith.Nat
+\import Order.StrictOrder
+\import Paths
+\import Paths.Meta
+\import funs
+\import list
+\open StrictPoset.Reasoning
+\open LinearOrder
+
+\data Order3 | ab_ | a_b | _ab | error3
+
+\data Order4 | abc_ | ab_c | a_bc | _abc | error4
+
+\func \infixl 5 <=? (a b : Nat) : Bool
+  | 0 , _ => true
+  | suc a, 0 => false
+  | suc a, suc b => a <=? b
+
+\func compare3 (a b n : Nat) : Order3
+  | 0, 0, _ => ab_
+  | _, _, 0 => _ab
+  | 0, suc b, suc n => if (b <=? n) ab_ a_b
+  | suc a, 0, suc n => error3
+  | suc a, suc b, suc n => compare3 a b n
+
+\func compare4 (a b c n : Nat) : Order4
+  | 0, 0, 0, _ => abc_
+  | _, _, _, 0 => _abc
+  | _, suc b, 0, _ => error4
+  | suc a, _, 0, _ => error4
+  | suc a, 0, _, n => error4
+  | 0, 0, suc c, suc n => \case  c <=? n \with {
+    | true => abc_
+    | false => ab_c
+  }
+  | 0, suc b, suc c, suc n => \case compare3 b c n \with{
+    | ab_ => abc_
+    | a_b => ab_c
+    | _ab => a_bc
+    | error3 => error4
+  }
+  | suc a, suc b, suc c, suc n => compare4 a b c n
+
+\data Tree23
+  | Node2 Nat Tree23 Tree23
+  | Node3 Nat Nat Tree23 Tree23 Tree23
+  | Error
+  | Single Nat
+  | Leaf2 Nat Nat
+  | Leaf3 Nat Nat Nat
+
+\data InsertRes
+  | One Tree23
+  | Two Nat Tree23 Tree23
+
+\func Four (a b c d : Nat) => Two c (Leaf2 a b) (Leaf2 c d)
+
+\func insert (n : Nat) (t : Tree23): Tree23 => \case go n t \with {
+  | One t => t
+  | Two a tl tr => Node2 a tl tr
+} \where {
+  \func all (l : List Nat) (t : Tree23) : Tree23 \elim l
+    | nil => t
+    | :: a tail => all tail (insert a t)
+
+  \func go (n : Nat) (t : Tree23) : InsertRes \elim t
+    | Error => One Error
+    | Node2 a tl tr => \case a <=? n \with {
+      | true => \case go n tr \with {
+        | One tr' => One (Node2 a tl tr')
+        | Two b tm tr' => One (Node3 a b tl tm tr')
+      }
+      | false => \case go n tl \with {
+        | One tl' => One (Node2 a tl tr)
+        | Two b tl' tm => One (Node3 b a tl' tm tr)
+      }
+    }
+    | Node3 a b tl tm tr => \case compare3 a b n \with {
+      | ab_ => \case go n tr \with {
+        | One tr' => One (Node3 a b tl tm tr')
+        | Two c tm' tr => Two b (Node2 a tl tm) (Node2 c tm' tr)
+      }
+      | a_b => \case go n tm \with {
+        | One tm' => One (Node3 a b tl tm' tr)
+        | Two c tl' tr' => Two c (Node2 a tl tl') (Node2 b tr' tr)
+      }
+      | _ab => \case go n tl \with {
+        | One tl' => One (Node3 a b tl' tm tr)
+        | Two c tl' tm' => Two a (Node2 c tl' tm') (Node2 b tm tr)
+      }
+      | error3 => One Error
+    }
+    | Single a => One (\case n <=? a \with {
+      | true => Leaf2 n a
+      | false => Leaf2 a n
+    })
+    | Leaf2 a b => One (\case compare3 a b n \with {
+      | ab_ => Leaf3 a b n
+      | a_b => Leaf3 a n b
+      | _ab => Leaf3 n a b
+      | error3 => Error
+    })
+    | Leaf3 a b c => \case compare4 a b c n \with {
+      | abc_ => Four a b c n
+      | ab_c => Four a b n c
+      | a_bc => Four a n b c
+      | _abc => Four n a b c
+      | error4 => One Error
+    }
+}
+
+\func toList (t : Tree23) : List Nat => go t nil \where {
+  \func go (t : Tree23) (acc : List Nat) : List Nat \elim t
+    | Node2 a tl tr => go tl (go tr acc)
+    | Node3 a b tl tm tr => go tl (go tm (go tr acc))
+    | Error => acc
+    | Single a => a :: acc
+    | Leaf2 a b => a :: b :: acc
+    | Leaf3 a b c => a :: b :: c :: acc
+}
+
+\func fromList (l : List Nat) : Tree23
+  | nil => Error
+  | :: a tail => insert.all tail (Single a
+
+  )
+
+\func sort (l : List Nat) : List Nat
+  | nil => nil
+  | :: a nil => :: a nil
+  | :: a tail => toList (insert.all tail (Single a))

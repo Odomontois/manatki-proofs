@@ -1,9 +1,11 @@
 \import Paths
+\import Paths.Meta
 \import funs
 \import list
 \open  List
 \import Function
 \open Exchange
+\open Weakening
 
 \record BaseStruct {A : \Type} (P : List A -> \Type)
 
@@ -49,6 +51,10 @@
     | nil => p
     | :: a l => weak $ flood l p
 
+  \func flood-before (l l' : List A) (p : P l') : P (l ++ l') \elim l
+    | nil => p
+    | :: a l => weak $ flood-before l l' p
+
   \func weakMany {l l' : List A} (p : P l) : P (l' ++ l) \elim l'
     | nil => p
     | :: a l' => weak $ weakMany p
@@ -62,4 +68,8 @@
 
 \record Structural \extends Exchange, Weakening, Contraction{
   \func weak-in {l : List A} {a : A} (l' : List A) : P (l' ++ l) -> P (l' ++ a :: l) => push-head o weak
+
+  \func flood-after (l l' : List A) (p : P l) : P (l ++ l') \elim l'
+    | nil => rewrite List.++nil p
+    | :: a l' => push-head $ weak $ flood-after l l' p
 }
