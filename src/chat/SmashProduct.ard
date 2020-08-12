@@ -1,0 +1,54 @@
+\import Homotopy.Pointed
+
+\data SmashProduct (X Y : Pointed)
+  | spd X Y  -- "smash product data"
+  | smashl (x : X) (i : I) \elim i {
+    | left => spd x Y.base
+    | right => spd X.base Y.base
+  }
+  | smashr (y : Y) (i : I) \elim i {
+    | left => spd X.base y
+    | right => spd X.base Y.base
+  }
+
+\data Circle
+  | base1
+  | loop (i : I) \with {
+    | left => base1
+    | right => base1
+  }
+  \where \func pointed : Pointed \cowith {
+    | E => Circle
+    | base => base1
+  }
+
+\data S2
+  | base2
+  | surface (i : I) (j : I) \with {
+    | left, _ => base2
+    | right, _ => base2
+    | _, left => base2
+    | _, right => base2
+  }
+
+-- S1 /\ S1 = S2
+
+\func SmashProduct->S2 (x : SmashProduct Circle.pointed Circle.pointed) : S2
+  | spd x y => prod x y
+  | smashl x i => prod-l x @ i
+  | smashr y i => prod-r y @ i
+\where {
+  \func prod (x y : Circle.pointed) : S2
+    | base1, base1 => base2
+    | base1, loop i => base2
+    | loop i, base1 => base2
+    | loop i, loop j => surface i j
+
+  \func prod-r (x : Circle.pointed) : prod base1 x = S2.base2
+    | base1 => idp
+    | loop i => idp
+
+  \func prod-l (x : Circle.pointed) : prod x base1 = S2.base2
+    | base1 => idp
+    | loop i => idp
+}
