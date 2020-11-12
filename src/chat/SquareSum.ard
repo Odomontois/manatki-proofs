@@ -1,0 +1,39 @@
+\import Logic.Meta
+\import Algebra.Monoid
+\import Algebra.Pointed
+\import Algebra.Ordered
+\import Algebra.Semiring
+\import Arith.Nat
+\import Arith.Rat
+\import Order.StrictOrder
+\import Logic
+\import Order.LinearOrder
+\open LinearOrder
+\import Paths
+
+\lemma square_sum_zero_nat (a b : Nat) (p : a * a + b * b = 0): \Sigma (a = 0) (b = 0)
+  | 0, 0, p => (idp, idp)
+  | suc a, 0, p => contradiction
+
+\lemma square_sum_zero_rat (a b : Rat) (p : a * a + b * b = zro): \Sigma (a = zro) (b = zro)
+  | a, b, p => {?}
+
+\lemma square!=0 {A : LinearlyOrderedSemiring} (a : A): Not (a * a < zro) =>
+  \lam p => \let q : a * a < a * zro => transport (_ < __) (inv (zro_*-right a)) p
+            \in \case <_*-cancel-left a a zro q \with {
+      | byLeft (a<0, a>0) => <-irreflexive (<-transitive a<0 a>0)
+      | byRight (a<0, a>0) => <-irreflexive (<-transitive a<0 a>0)
+    }
+
+\lemma negSquare>0 {A : LinearlyOrderedSemiring} (a : A) (p : a < 0): a * a > 0 =>
+  transport (a * a > __) (zro_*-left a) (<_*_negative-left p p)
+
+\lemma posSquare>0 {A : LinearlyOrderedSemiring} (a : A) (p : a > 0): a * a > 0 =>
+  transport (a * a > __) (zro_*-left a) (<_*_positive-left p p)
+
+\open LinearOrder.Dec
+
+\lemma squareSum0->0 {A : LinearlyOrderedSemiring} (a b : A) (p : a * a + b * b = zro): \Sigma (a = zro) (b = zro) =>
+  {?}
+
+
