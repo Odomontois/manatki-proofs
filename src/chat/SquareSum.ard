@@ -53,7 +53,7 @@
        | bad-A {P : \Prop} (c : P -> a * a > zro) : Not P =>  bad-idea (\lam p => pos+notNeg {A} (c p) (square>=0 b) )
        | bad-B {P : \Prop} (c : P -> b * b > zro) : Not P =>
          bad-idea (\lam p => transport (__ > _) A.+-comm (pos+notNeg {A} (c p) (square>=0 a)) )
-       | a=0 => A.<-connectedness (bad-A (negSquare>0 a)) (bad-A (posSquare>0 a))
-       | b=0 => A.<-connectedness (bad-B (negSquare>0 b)) (bad-B (posSquare>0 b))
+       | a=0 => <-connectedness (bad-A (negSquare>0 a)) (bad-A (posSquare>0 a))
+       | b=0 => <-connectedness (bad-B (negSquare>0 b)) (bad-B (posSquare>0 b))
   \in (a=0, b=0)
 
