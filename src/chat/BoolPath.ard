@@ -1,12 +1,17 @@
 \import Data.Bool
 \import Equiv (QEquiv)
 \import Equiv.Univalence
+\import HLevel
 \import Paths
 
-\lemma not-involutive (b : Bool) : not (not b) = b
+\func not-involutive (b : Bool) : not (not b) = b
   | true => idp
-  | false => idp
+  | false => {?}
 
 \func boolInv : Bool = Bool => QEquiv-to-= (\new QEquiv not not not-involutive not-involutive)
 
-\lemma omg : Path (@ boolInv) true false => path (coe (@ boolInv) true)
+\func omg : Path (@ boolInv) true false => path (coe (@ boolInv) true)
+
+\func T (b : Nat) : \Sigma (t : \hType) (isSet t)
+  | zero => (Bool, \lam x y p => Path.inProp p)
+  | suc n => \let (s, l) => T n \in (s = {\hType} Bool, {?})

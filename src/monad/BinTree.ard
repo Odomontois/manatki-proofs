@@ -1,0 +1,42 @@
+\import Meta
+\import Paths.Meta
+\import monad
+
+\data Tree (A : \Set)
+  | Leaf A
+  | Node (Tree A) A (Tree A) \where {
+  \func overgrowth {A : \Set} (center left right : Tree A) : Tree A \elim center
+    | Leaf x => Node left x right
+    | Node lc x rc => Node (overgrowth lc left right) x (overgrowth rc left right)
+
+  \func flatMap {A B : \Set} (fa : Tree A) (f : A -> Tree B) : Tree B \elim fa
+    | Leaf a => f a
+    | Node l a r => overgrowth (f a) (flatMap l f) (flatMap r f)
+
+  \lemma right_unit {A : \Set} (fa : Tree A) : flatMap fa Leaf = fa
+    | Leaf a => idp
+    | Node fa1 a fa2 => rewrite right_unit (rewrite right_unit idp)
+
+  \lemma flatMap-assoc {A B C : \Set} (fa : Tree A) (f : A -> Tree B) (g : B -> Tree C):
+    flatMap fa (\lam x => flatMap (f x) g) = flatMap (flatMap fa f) g \elim fa
+    | Leaf a => idp
+    | Node l a r => rewrite (flatMap-assoc l f) ( rewrite (flatMap-assoc r f) (flatMap-overgrowth _ _ _ g) ) \where {
+    \lemma flatMap-overgrowth {A B : \Set} (t1 t2 t3 : Tree A) (f : A -> Tree B) :
+      overgrowth (flatMap t1 f) (flatMap t2 f) (flatMap t3 f) = flatMap (overgrowth t1 t2 t3) f \elim t1
+      | Leaf a => idp
+      | Node l a r => rewriteI flatMap-overgrowth (rewriteI flatMap-overgrowth (overgrowth-assoc _ _ _ _ _))
+
+    \lemma overgrowth-assoc {A : \Set} (center l1 r1 l2 r2 : Tree A) :
+      overgrowth (overgrowth center l1 r1) l2 r2 = overgrowth center (overgrowth l1 l2 r2 ) (overgrowth r1 l2 r2) \elim center
+      | Leaf a => idp
+      | Node lc a rc => rewrite overgrowth-assoc (rewrite overgrowth-assoc idp)
+  }
+}
+
+\instance TreeMonad : Monad Tree
+  | pure => Leaf
+  | flatMap => Tree.flatMap
+  | left_unit a f => idp
+  | right_unit  => Tree.right_unit
+  | assocmonad => Tree.flatMap-assoc
+
