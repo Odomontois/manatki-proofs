@@ -1,0 +1,55 @@
+\import Algebra.Group
+\import Algebra.Monoid
+\import Algebra.Pointed
+\import Algebra.Ring
+\import Algebra.Semiring
+\import Meta
+\import Paths
+\import Arith.Int
+\import Arith.Nat
+\import Paths.Meta
+
+\func fromNat {A : Semiring} (x : Nat) : A
+  | 0 => zro
+  | suc x => fromNat x + ide \where {
+  \lemma keep_zro {A : Semiring} : fromNat 0 = A.zro => idp
+
+  \lemma keep_sum {A : Semiring} (a b : Nat): fromNat a + fromNat b = {A} fromNat (a + b) \elim b
+    | 0 => Semiring.zro-right
+    | suc b => rewriteI (keep_sum a b) (inv Semiring.+-assoc)
+
+  \lemma keep_one {A : Semiring} : fromNat 1 = A.ide => A.zro-left
+
+  \lemma keep_mul {A : Semiring} (a b : Nat) : fromNat a * fromNat b = {A} fromNat ( a * b) \elim a, b
+    | a, 0 => Semiring.zro_*-right _
+    | a, suc b =>
+      Semiring.ldistr _ _ _ *>
+      run {
+        rewriteI keep_sum,
+        rewrite keep_mul,
+        rewrite Semiring.ide-right,
+        idp
+      }
+}
+
+\open AddGroup (negative)
+
+\func fromInt {A : Ring} (x : Int) : A
+  | pos n => fromNat n
+  | neg (suc n) => negative (fromNat (suc n)) \where {
+  \lemma keep_one {A : Ring} : fromInt 1 = A.ide => fromNat.keep_one
+
+  \lemma keep_neg {A : Ring} (a : Int) : fromInt ( negative a) = {A} negative (fromInt a) \elim a
+    | pos 0 => inv AddGroup.negative_zro
+    | pos (suc n) => idp
+    | neg (suc n) => rewrite AddGroup.negative-isInv idp
+
+  \lemma keep_mul {A : Ring} (a b : Int) : fromInt a * fromInt b = {A} fromInt (a * b) \elim a, b
+    | pos a, pos b => fromNat.keep_mul _ _
+    | pos 0, neg b => run { Ring.zro_*-left _ *>, pmap fromInt , pmap neg , inv , Semiring.zro_*-left b }
+    | neg (suc a), pos 0 => zro_*-right _
+    | pos (suc a), neg (suc b) => rewrite (Ring.negative_*-right) (rewrite (fromNat.keep_mul (suc a) (suc b)) idp )
+    | neg (suc a), pos (suc b) => rewrite Ring.negative_*-left (rewrite (fromNat.keep_mul (suc a) (suc b)) idp )
+    | neg (suc a), neg (suc b) => rewrite Ring.negative_* (fromNat.keep_mul (suc a) (suc b))
+}
+

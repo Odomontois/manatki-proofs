@@ -1,0 +1,12 @@
+\import HLevel
+\import Logic.Meta
+\import Set.Fin
+
+\func foo(A : \Prop) => ()
+
+\lemma fin1IsProp (x y : Fin 1) : x = y
+  | fzero, fzero => idp
+  | _, fsuc y => contradiction
+  | fsuc x, _ => contradiction
+
+\func bar  => foo (\level (Fin 1) fin1IsProp)
