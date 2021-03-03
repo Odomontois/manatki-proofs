@@ -1,0 +1,21 @@
+\import Algebra.Ring
+\import Algebra.Monoid
+\import Arith.Int
+\import Meta
+\import Paths
+\import Paths.Meta
+
+\data MSet (A : \Type)
+| empty
+| \infixr 5 :: A (MSet A)
+| comm (x y : A) (tail : MSet A) (i : I) \elim i {
+  | left => x :: y :: tail
+  | right => y :: x :: tail
+}
+
+\func sum {A : AbMonoid} (set : MSet A) :  A
+| empty => 0
+| :: x tail => x + sum tail
+| comm x y tail i =>
+  \let p : x + (y + sum tail) = y + (x + sum tail) => inv +-assoc *> pmap (__ + sum tail) +-comm *> +-assoc
+  \in p @ i
