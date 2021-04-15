@@ -7,17 +7,15 @@
 
 \func Subs (A : \Type) => A -> \Prop
 
-\func isInj {A B : \Type} (f : A -> B) => \Pi (x y : A) -> f x = f y -> x = y
+\func isInj {A B : \Type} (f : A -> B): \Prop => \Pi (x y : A) -> f x = f y -> TruncP (x = y)
 
 \func eq1 {A : \Type} (a b : A) : \Prop => TruncP (a = b)
 
 \func isSur {A B : \Type} (f : A -> B) : \Prop =>
   \Pi (b : B) -> TruncP (\Sigma (a : A) (f a = b))
 
-\func cantor1 (A : \Set) : \Sigma (f : A -> Subs A) (isInj f) =>
-  (eq1, \lam x y eq => \case coe (\lam i => (eq @ i) x) (inP idp) right \with {
-  inP p => inv p
-  })
+\func cantor1 (A : \Type) : \Sigma (f : A -> Subs A) (isInj f) =>
+  (eq1, \lam x y eq => TruncP.map  (coe (\lam i => (eq @ i) x) (inP idp) right) inv)
 
 \lemma cantor2 (A : \Type) (f : A -> Subs A) (t : isSur f) : Empty =>
   \let | P : Subs A => \lam x => Not (f x x)
