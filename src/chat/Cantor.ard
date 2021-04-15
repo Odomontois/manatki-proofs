@@ -19,15 +19,12 @@
   inP p => inv p
   })
 
-\lemma P!=!P (P : \Prop) (f : P -> Not P) (g : Not P -> P) : Empty =>
-  \let x : P => g (\lam p => f p p) \in f x x
-
 \lemma cantor2 (A : \Type) (f : A -> Subs A) (t : isSur f) : Empty =>
-  \let P : Subs A => \lam x => Not (f x x)
-  \in \case t P \with {
-    | inP (px, pe) => P!=!P (P px)
-        (\lam e _ => run {e , rewrite pe, e})
-        (\lam n _ => run {n, unfold P, rewrite pe, n})
+  \let | P : Subs A => \lam x => Not (f x x)
+  \in \case t (\lam x => Not (f x x)) \with {
+    | inP (px, pe) =>
+      \let n (e : P px) : Empty => run {e, rewrite pe, e}
+      \in run {n, unfold P, rewrite pe, n}
   }
 
 
