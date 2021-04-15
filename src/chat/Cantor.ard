@@ -5,22 +5,24 @@
 \import Paths.Meta
 \import Set
 
-\func Subs (A : \Set) => A -> \Prop
+\func Subs (A : \Type) => A -> \Prop
 
-\func isInj {A B : \Set} (f : A -> B) => \Pi (x y : A) -> f x = f y -> x = y
+\func isInj {A B : \Type} (f : A -> B) => \Pi (x y : A) -> f x = f y -> x = y
 
-\func eq1 {A : \Set} (a b : A) : \Prop => a = b
+\func eq1 {A : \Type} (a b : A) : \Prop => TruncP (a = b)
 
-\func isSur {A B : \Set} (f : A -> B) : \Prop =>
+\func isSur {A B : \Type} (f : A -> B) : \Prop =>
   \Pi (b : B) -> TruncP (\Sigma (a : A) (f a = b))
 
 \func cantor1 (A : \Set) : \Sigma (f : A -> Subs A) (isInj f) =>
-  (=, \lam x y eq => inv (coe (\lam i => (eq @ i) x) idp right))
+  (eq1, \lam x y eq => \case coe (\lam i => (eq @ i) x) (inP idp) right \with {
+  inP p => inv p
+  })
 
 \lemma P!=!P (P : \Prop) (f : P -> Not P) (g : Not P -> P) : Empty =>
   \let x : P => g (\lam p => f p p) \in f x x
 
-\lemma cantor2 (A : \Set) (f : A -> Subs A) (t : isSur f) : Empty =>
+\lemma cantor2 (A : \Type) (f : A -> Subs A) (t : isSur f) : Empty =>
   \let P : Subs A => \lam x => Not (f x x)
   \in \case t P \with {
     | inP (px, pe) => P!=!P (P px)
