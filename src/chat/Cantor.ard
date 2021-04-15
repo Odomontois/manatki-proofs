@@ -1,0 +1,30 @@
+\import Logic
+\import Logic.Classical
+\import Meta
+\import Paths
+\import Paths.Meta
+\import Set
+
+\func Subs (A : \Set) => A -> \Prop
+
+\func isInj {A B : \Set} (f : A -> B) => \Pi (x y : A) -> f x = f y -> x = y
+
+\func eq1 {A : \Set} (a b : A) : \Prop => a = b
+
+\func isSur {A B : \Set} (f : A -> B) : \Prop =>
+  \Pi (b : B) -> TruncP (\Sigma (a : A) (f a = b))
+
+\func cantor1 (A : \Set) : \Sigma (f : A -> Subs A) (isInj f) =>
+  (=, \lam x y eq => inv (coe (\lam i => (eq @ i) x) idp right))
+
+\func cantor2 (A : \Set) (L : LEM) (f : A -> Subs A) (t : isSur f) : Empty =>
+  \let P : Subs A => \lam x => Not (f x x)
+  \in \case t P \with {
+    | inP (px, pe) => \case L.lem (P px) \with {
+      | yes e => run { e , rewrite pe, e}
+      | no n => run { n, unfold, rewrite pe, n }
+    }
+  }
+
+
+

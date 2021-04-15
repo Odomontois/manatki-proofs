@@ -13,9 +13,10 @@
   | right => y :: x :: tail
 }
 
-\func sum {A : AbMonoid} (set : MSet A) :  A
-| empty => 0
-| :: x tail => x + sum tail
-| comm x y tail i =>
-  \let p : x + (y + sum tail) = y + (x + sum tail) => inv +-assoc *> pmap (__ + sum tail) +-comm *> +-assoc
-  \in p @ i
+--  \func sum {A : AbMonoid} (set : MSet A) :  A
+--  | empty => 0
+--  | :: x tail => x + sum tail
+--  | comm x y tail i =>
+--    \let p : x + (y + sum tail) = y + (x + sum tail) => inv +-assoc *> pmap (__ + sum tail) +-comm *> +-assoc
+--    \in p @ i
+

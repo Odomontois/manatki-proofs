@@ -16,7 +16,8 @@
   | a=b I \with{
     | left => A
     | right => B
-  }
+  } \where {
+}
 
 \func propeq {A : \Type} (aprop : isProp A) {a a' : A} : isProp (a = a') => {?}
 

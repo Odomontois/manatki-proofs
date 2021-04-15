@@ -1,0 +1,23 @@
+\import Arith.Int
+\import Paths
+\import Algebra.Monoid
+\import Paths.Meta
+
+\data MSet (A : \Type)
+  | nil
+  | \infixr 10 :: A (MSet A)
+  | comm (x y : A) (tail : MSet A) (i : I) \elim i {
+    | left => x :: y :: tail
+    | right => y :: x :: tail
+  }
+
+\func sum (x : MSet Int) : Int
+  | nil => 0
+  | :: a x => a + sum x
+  | comm x y tail i => sum_comm x y (sum tail) @ i \where {
+  \func sum_comm (x y z : Int): x + (y + z) = y + (x + z) =>
+    x + (y + z) ==< inv +-assoc >==
+    (x + y) + z ==< pmap (__ + z) +-comm >==
+    (y + x) + z ==< +-assoc >==
+    y + (x + z) `qed
+}
