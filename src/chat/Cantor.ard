@@ -1,3 +1,7 @@
+\import Data.Bool
+\import Equiv (QEquiv)
+\import Equiv.Univalence
+\import Function
 \import Logic
 \import Logic.Classical
 \import Meta
@@ -25,5 +29,17 @@
       \in run {n, unfold P, rewrite pe, n}
   }
 
+\lemma nn (b : Bool) : not (not b) = b => cases b idp
+
+\func nne : Bool = Bool => QEquiv-to-= \new QEquiv not not nn nn
+
+\func to (bb : Bool = Bool) : Bool => transport id bb true
+
+\func from (b : Bool) : Bool = Bool
+  | true => idp
+  | false => nne
+
+\func toFrom (b : Bool) : to (from b) = b => cases b idp
+\func fromTo (b : Bool = Bool) : from (to b) = b => {?}
 
 

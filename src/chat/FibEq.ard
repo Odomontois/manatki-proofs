@@ -1,0 +1,25 @@
+\import Algebra.Monoid
+\import Arith.Nat
+\import Meta
+\import Paths
+\import Paths.Meta
+
+\func fib-rec (n : Nat) : Nat
+  | 0 => 0
+  | 1 => 1
+  | suc (suc n) => fib-rec n + fib-rec (suc n)
+
+\func fib-tailrec (n : Nat): Nat => go n 0 1 \where {
+  \func go (n x y : Nat): Nat \elim n
+    | 0 => x
+    | suc n => go n y (x + y)
+
+  \lemma go-plus (n x y : Nat) : go (n + 2) x y = go n x y + go (suc n) x y  \elim n
+    | 0 => idp
+    | suc n => rewriteI go-plus idp
+}
+
+\lemma fib-eq (n : Nat) : fib-rec n = fib-tailrec n
+  | 0 => idp
+  | 1 => idp
+  | suc (suc n) => run { rewrite  fib-eq,  rewrite fib-eq , rewriteI fib-tailrec.go-plus, idp }
