@@ -1,5 +1,6 @@
 \import Algebra.Monoid
 \import Arith.Nat
+\import Function.Meta
 \import Meta
 \import Paths
 \import Paths.Meta
@@ -19,7 +20,7 @@
     | suc n => rewriteI go-plus idp
 }
 
-\lemma fib-eq (n : Nat) : fib-rec n = fib-tailrec n
+\lemma fib-eq (n : Nat): fib-rec n = fib-tailrec n
   | 0 => idp
   | 1 => idp
-  | suc (suc n) => run { rewrite  fib-eq,  rewrite fib-eq , rewriteI fib-tailrec.go-plus, idp }
+  | suc (suc n) => run { repeat (rewrite fib-eq), rewriteI fib-tailrec.go-plus, idp }
