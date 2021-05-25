@@ -1,0 +1,37 @@
+\import Arith.Nat
+\import Arith.Fin
+\import Data.Bool
+\import HLevel
+\import Logic
+\import Logic.Meta
+\import Meta
+\import Paths
+\import Set
+\open Nat (mod)
+
+\data FizzBuzz  | fizz | buzz | fizz-buzz | none
+
+\func fizzBuzz (n : Nat) :  FizzBuzz => go (n mod 3) (n mod 5) \where {
+  \func go (n3 : Fin 3) (n5 : Fin 5) : FizzBuzz \elim n3, n5
+    | 0, 0 => fizz-buzz
+    | 0, suc _ => fizz
+    | suc _, 0 => buzz
+    | suc _, suc _ => none
+}
+
+\data FizzBuzzProp (n : Nat) (fb : FizzBuzz) : \Prop \elim fb
+  | fizz => pfizz (n mod 3 = 0) (n mod 5 /= 0)
+  | buzz => pbuzz (n mod 3 /= 0) (n mod 5 = 0)
+  | fizz-buzz  => pfizzbuzz (n mod 3 = 0) (n mod 5 = 0)
+  | none =>  pnone (n mod 3 /= 0) (n mod 5 /= 0)
+
+\lemma fizz-buzz-prop (n : Nat): FizzBuzzProp n (fizzBuzz n) =>
+  \case n mod 3 \as n3, n mod 5 \as n5, idp \as e1 : n mod 3 = n3, idp \as e2 : n mod 5 = n5
+  \return FizzBuzzProp n (fizzBuzz.go n3 n5)  \with {
+    | 0, 0, e1, e2 => pfizzbuzz e1 e2
+    | suc _, 0, e1, e2 => pbuzz (\lam x => contradiction (inv e1 *> x)) e2
+    | 0, suc _, e1, e2 => pfizz e1 (\lam x => contradiction (inv e2 *> x))
+    | suc _, suc _, e1, e2 => pnone (\lam x => contradiction (inv e1 *> x)) (\lam x => contradiction (inv e2 *> x))
+  }
+
+
