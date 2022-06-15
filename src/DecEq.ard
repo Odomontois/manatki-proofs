@@ -1,14 +1,15 @@
+\import Arith.Nat
 \import Data.Bool
+\import Data.Fin
 \import Equiv
 \import Equiv.Univalence
+\import Function
 \import Logic
+\import Logic.Meta
 \import Paths
 \import Set
-\import Function
-\import Arith.Nat
-\import Set.Fin
 
-\instance decSetBool : DecSet.Impl Bool
+\instance decSetBool : DecSet Bool
   | decideEq => impl
   \where {
     \lemma impl (a b : Bool) : Dec (a = b) \elim a, b
@@ -18,10 +19,10 @@
       | false, true => no (true/=false o inv)
   }
 
-\instance decEqUnit : DecSet.Impl (\Sigma)
+\instance decEqUnit : DecSet (\Sigma)
   | decideEq a b => yes (Path.inProp a b)
 
-\instance decEqSigma {A : DecSet} (BD : \Pi (a : A) -> DecSet) : DecSet.Impl (\Sigma (a : A) (BaseSet.E {BD a}))
+\instance decEqSigma {A : DecSet} (BD : \Pi (a : A) -> DecSet) : DecSet (\Sigma (a : A) (BaseSet.E {BD a}))
   | decideEq s1 s2 =>
     \let | B (a : A) : \Set => BaseSet.E {BD a}
          | se : QEquiv => sigmaEquiv B s1 s2
@@ -32,11 +33,11 @@
         | no n => no (\lam e => n (
           \let eqs => se.f e
           \in transport (\lam p => transport B p s1.2 = s2.2)
-                        (Path.inProp {s1.1 = s2.1} eqs.1 e1) eqs.2))
+              (Path.inProp {s1.1 = s2.1} eqs.1 e1) eqs.2))
       }
     }
 
-\instance decEqNat : DecSet.Impl Nat
+\instance decEqNat : DecSet Nat
   | decideEq => impl \where {
   \lemma suc!=0 {n : Nat} (p : suc n = 0) : Empty => suc/=0 p
 
@@ -53,12 +54,20 @@
 \lemma decTransEq  {A B : \Set} {a a' : A} {b b' : B} (f : a = a' -> b = b') (g : b = b' -> a = a') : Dec (a = a') -> Dec (b = b') =>
   decTrans f g
 
-\instance decSetFin {n : Nat} : DecSet.Impl (Fin n)
+\instance decSetFin {n : Nat} : DecSet (Fin n)
   | decideEq => impl \where {
+  \lemma suc-inj {n : Nat} {a b : Fin n} (p : fsuc a = fsuc b) : a = b =>
+    \let fpred (t : Fin (suc n)): Fin n =>
+      \case t \with {
+        | 0 => a
+        | fsuc x => x
+      }
+    \in pmap fpred p
+
   \lemma impl {n : Nat} (a b : Fin n) : Dec (a = b) \elim n, a, b
-    | suc _, fzero, fzero => yes idp
-    | suc _, fzero, fsuc _ => no fzero/=fsuc
-    | suc _, fsuc _, fzero => no (fzero/=fsuc o inv)
-    | suc _, fsuc f, fsuc g => decTransEq (pmap fsuc) (fsuc-isInj f g) (impl f g)
+    | suc _, 0, 0 => yes idp
+    | suc _, 0, suc _ => no contradiction
+    | suc _, suc _, zero => no contradiction
+    | suc n, suc f, suc g => decTransEq (pmap fsuc) suc-inj (impl f g)
 }
 

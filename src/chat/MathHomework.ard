@@ -1,31 +1,44 @@
 \import Algebra.Semiring
 \import Algebra.Monoid
+\import Function.Meta
+\import Meta
 \import Paths
 \import Arith.Nat
+\import Paths.Meta
 
 \func sum-to (n : Nat) : Nat
   | 0 => 0
   | suc n => suc (n + sum-to n)
 
-\lemma suc-left (n m : Nat) : suc n + m = suc (n + m) => +-assoc n 1 m *> pmap (+ n) (+-comm 1 m)
+\lemma suc-left (n m : Nat) : (n + 1) + m = (n + m) + 1 => rewrite (+-assoc {_} {n} {1}) idp
 
 \lemma sum-to-formula (n : Nat) : sum-to n * 2 = n * suc n
   | 0 => idp
-  | suc n => pmap suc (
-    pmap (\lam x => suc x + _) (zro-left _) *>
+  | suc n => run {
+    unfold,
+    pmap (suc $ suc __),
+
+
+    {?}
+  }
+
+
+{-
+    pmap suc (
+    pmap (\lam x => suc x + _) zro-left *>
     suc-left _ _ *>
     pmap suc (
-      +-assoc _ _ _ *>
+      +-assoc *>
       pmap (+ n) (
-        pmap (+ _) (+-comm _ _) *>
-        inv (+-assoc _ _ _) *>
+        pmap (+ _) +-comm *>
+        inv +-assoc *>
         pmap (\lam x => x + n) (
-          pmap (\lam x => x + _) (inv (zro-left _))  *>
+          pmap (\lam x => x + _) (inv zro-left)  *>
           sum-to-formula n *>
-          *-comm _ _
+          *-comm
         )
       ) *>
-      +-comm  _ _
+      +-comm
     )*>
     inv (suc-left _ _)
-  )
+  )-}
