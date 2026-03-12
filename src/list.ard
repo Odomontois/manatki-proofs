@@ -30,15 +30,15 @@
 
   \lemma head-monotone {A : \Set} {la : Poset A} (a b : A) (as : List A) (p : a <= b) : head a as <= head b as \elim as
     | nil => p
-    | :: c _ => <=-reflexive
+    | :: c _ => <=-refl
 
   \func head {A : \Type} (a : A) (l : List A) : A \elim l
     | nil => a
     | :: b _ => b
 
   \func at {A : \Type} (l : List A) (n : Fin (length l)) : A \elim l,n
-    | :: a tail, fzero => a
-    | :: a tail, fsuc n => at tail n
+    | :: a tail, 0 => a
+    | :: a tail, suc n => at tail n
 
   \func tail {A : \Type} (l : List A) : List A \elim l
     | nil => nil
@@ -119,12 +119,12 @@
   | right_empty => List.++nil
   | assoc  => List.assoc
 
-\instance listDecEq {A : DecSet}: DecSet.Impl (List A)
+\instance listDecEq {A : DecSet}: DecSet (List A)
   | decideEq => impl \where {
   \lemma impl {A : DecSet} (a b : List A) : Dec (a = b) \elim a, b
     | nil, nil => yes (idp)
-    | nil, :: _ _ => no List.discriminate
-    | :: _ _, nil => no (List.discriminate o inv)
+    | nil, :: _ _ => no contradiction
+    | :: _ _, nil => no contradiction
     | :: ha ta, :: hb tb => \case ha `decideEq` hb \with {
       | no n => no (\lam e => n (pmap (List.head ha) e))
       | yes eh => \case impl ta tb \with {
@@ -140,8 +140,8 @@
   \open List (++)
 
   \func at {A : \Type} {l : List A} (n : Fin (List.length l)) : Index (List.at l n) l \elim l,n
-    | :: a tail, fzero => Here idp
-    | :: a tail, fsuc n => There (at n)
+    | :: a tail, 0 => Here idp
+    | :: a tail, suc n => There (at n)
 
   \func swap-head {A : \Type} {a b e : A} {l : List A} (i : Index e (a :: b :: l)) : Index e (b :: a :: l)
     | Here p => There (Here p)
@@ -158,12 +158,6 @@
 
   \func no-nil {A B : \Type} (a : A) (eq : Index a nil) : B
 
-  \func here!=there {A B : \Type} {e h : A} {t : List A}
-                    {el : Index e t} {eq : e = h}
-                    (p : Here eq = There el)  : B =>
-    coe (\lam i => \case p @ i \with {
-    Here _ => \Sigma | There _ => B
-    }) () right
 
   \func there-injective {A : \Type} {a h : A} {l : List A}
                         {e1 e2 : Index a l} (p : There {_} {_} {h} e1 = There e2) : e1 = e2 =>
@@ -175,9 +169,9 @@
 
   \func @0 {A : \Type} {a : A} {l : List A} : Index a (a :: l) => Here idp
 
-  \func @1 {A : \Type} {a b : A} {l : List A}: Index b (a :: b :: l) => at (fnat 1)
+  \func @1 {A : \Type} {a b : A} {l : List A}: Index b (a :: b :: l) => at 1
 
-  \func @2 {A : \Type} {a b c : A} {l : List A}: Index c (a :: b :: c :: l) => at (fnat 2)
+  \func @2 {A : \Type} {a b c : A} {l : List A}: Index c (a :: b :: c :: l) => at 2
 
   \func squash-0 {A : \Type} {e e' : A} {l : List A} (p1 : Index e l) (p2 : Index e' (e :: l)) : Index e' l \elim l, p1, p2
     | :: a l, Here p1, Here p2 => Here $ p2 *> p1
@@ -205,15 +199,15 @@
     | :: a l => There $ l index++ i
 }
 
-\instance elemDecEq {A : DecSet} {e : A} {l : List A} : DecSet.Impl (Index e l)
+\instance elemDecEq {A : DecSet} {e : A} {l : List A} : DecSet (Index e l)
   | decideEq => impl \where {
   \lemma impl {A : DecSet} {e : A} {l : List A} (a b : Index e l) : Dec (a = b) \elim l, a, b
-    | :: a tail, Here p1, Here p2 => yes (pmap Here (Path.inProp {e = a} p1 p2))
-    | :: a tail, Here =, There e => no Index.here!=there
-    | :: a tail, There e, Here = => no (Index.here!=there o inv)
+    | :: a tail, Here p1, Here p2 => yes (pmap Here ext)
+    | :: a tail, Here =, There e => no contradiction
+    | :: a tail, There e, Here = => no contradiction
     | :: a tail, There e1, There e2 => \case impl e1 e2 \with {
       | yes p => yes (pmap There p)
-      | no n => no (n  o Index.there-injective)
+      | no n => no (n o Index.there-injective)
     }
 }
 
@@ -224,9 +218,9 @@
 
   \lemma @0 {A : \Type} {a : A} {l : List A} : Elem a (a :: l) => here idp
 
-  \lemma @1 {A : \Type} {a b : A} {l : List A}: Elem b (a :: b :: l) => at (fnat 1)
+  \lemma @1 {A : \Type} {a b : A} {l : List A}: Elem b (a :: b :: l) => at 1
 
-  \lemma @2 {A : \Type} {a b c : A} {l : List A}: Elem c (a :: b :: c :: l) => at (fnat 2)
+  \lemma @2 {A : \Type} {a b c : A} {l : List A}: Elem c (a :: b :: c :: l) => at 2
 
   \func at {A : \Type} {l : List A} (n : Fin (List.length l)) : Elem (List.at l n) l => TruncP.inP (Index.at n)
 
@@ -253,10 +247,6 @@
 }
 
 \open Nat (+)
-
-\func fnat {n : Nat} (m : Nat): Fin (suc (n + m)) \elim m
-  | 0 => fzero
-  | suc m => fsuc (fnat m)
 
 
 

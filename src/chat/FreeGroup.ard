@@ -1,4 +1,5 @@
 \import Equiv
+\import Logic.Meta
 
 \truncated \data FreeGroup (A : \Set) : \Set
   | zero
@@ -23,8 +24,10 @@
 
 
       \where  {
-        \lemma injectivity (inj : \Pi (a a' : A) -> f a = f a' -> a = a') (a a' : FreeGroup A) (eq : map f a = map f a') : a = a' =>
-          {?}
+        \lemma injectivity (inj : \Pi (a a' : A) -> f a = f a' -> a = a') (a a' : FreeGroup A) (eq : map f a = map f a') : a = a' \elim a, a'
+          | zero, zero => idp
+          | zero, a +: t => {?}
+          | _ , _ => {?}
       }
   }
 
