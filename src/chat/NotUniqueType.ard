@@ -1,0 +1,9 @@
+\import Data.Bool
+\import Function.Meta
+\import HLevel
+\import Logic
+\import Logic.Meta
+
+\lemma many-possible-codomains (A : \Type): Not (Contr (Given {T} (A -> T))) => \lam c =>
+    \let Unit=Bool => isContr=>isProp c (\Sigma, \lam _ => ()) (Bool, \lam _ => true)
+    \in  contradiction $ coe (\lam i => isProp $ (Unit=Bool i).1) prop-isProp right true false

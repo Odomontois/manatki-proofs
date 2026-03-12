@@ -1,0 +1,33 @@
+\import Equiv
+
+\truncated \data FreeGroup (A : \Set) : \Set
+  | zero
+  | \infixr 5 +: (head : A) (tail : FreeGroup A)
+  | \infixr 5 -: (head : A) (tail : FreeGroup A)
+  | lcanc (i : I) (a : A) (tail : FreeGroup A) \elim i {
+    | left => a +: a -: tail
+    | right => tail
+  }
+  | rcanc (i : I) (a : A) (tail : FreeGroup A) \elim i {
+    | left => a -: a +: tail
+    | right => tail
+  }
+  \where {
+    \func map {B : \Set} (f : A -> B) (a : FreeGroup A) : FreeGroup B \elim a
+      | zero => zero
+      | a +: tail => f a +: map f tail
+      | a -: tail => f a -: map f tail
+      | lcanc i a tail => lcanc i (f a) (map f tail)
+      | rcanc i a tail => rcanc i (f a) (map f tail)
+
+
+
+      \where  {
+        \lemma injectivity (inj : \Pi (a a' : A) -> f a = f a' -> a = a') (a a' : FreeGroup A) (eq : map f a = map f a') : a = a' =>
+          {?}
+      }
+  }
+
+}
+
+

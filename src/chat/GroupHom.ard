@@ -1,0 +1,225 @@
+\import Category (Cat)
+\import Equiv
+\import Equiv.HalfAdjoint
+\import Function
+\import Function.Meta
+\import Homotopy.Connected
+\import Homotopy.Pointed
+\import Homotopy.Space
+\import HLevel
+\import Logic
+\import Logic.Meta
+\import Meta
+\import Paths
+\import Paths.Meta
+\import Algebra.Group (Group \as AbsGroup)
+\import Algebra.Group.Category (GroupHom \as AbsGroupHom)
+\import Set.Hedberg
+
+\class infGroup \extends Connected0, Pointed {
+  | isConn' (x : E) : TruncP (base = x)
+  | isConn0 (x y : E) => \case isConn' x, isConn' y \with {
+    | inP p, inP q => inP (inv p *> q)
+  }
+
+  \lemma elim-Prop (P : E -> \Prop) (Pbase : P base) (x : E) : P x => \case isConn' x \with {
+    | inP p => transport P p Pbase
+  }
+
+  \func elim-Contr (P : E -> \Type) (Pcontr : Contr (P base)) : \Pi (x : E) -> P x =>
+    \lam x => Contr.center {all-Contr x}
+    \where \func all-Contr : \Pi (x : E) -> Contr (P x) => elim-Prop _ Pcontr
+
+  \func El => base = base
+} \where {
+  \func rec-Gpd
+    (G : infGroup) (X : Pointed \levels _ 1)
+    (f : G.El -> X.base = X.base)
+    (f-pres-*> : \Pi (p q : G.El) -> f (p *> q) = f p *> f q)
+    : G -> X => fun
+    \where {
+      \record C (x : G) {
+        | y : X
+        | f' : G.base = x -> X.base = y
+        | f'-pres-*> (p : G.El) (q : G.base = x) : f' (p *> q) = f p *> f' q
+      }
+
+      \func CContr : Contr (C base) \cowith
+        | center => \new C {
+          | C.y => X.base
+          | C.f' p => f p
+          | C.f'-pres-*> p q => f-pres-*> p q
+        }
+        | contraction _ => exts (f' idp, \lam p => simp_coe $ inv (f'-pres-*> p idp))
+
+      \func Cs : \Pi (x : G) -> C x => elim-Contr _ CContr
+
+      \func fun : G -> X => \lam x => C.y {Cs x}
+
+      \func fun-path {x : G} => C.f' {Cs x}
+
+      \lemma fun-path-pres-*> {x : G} => C.f'-pres-*> {Cs x}
+
+      \lemma fun-path-extends (loop : G.El) {x : G} (p : G.base = x)
+        : fun-path (loop *> p) = fun-path loop *> pmap fun p \elim x , p
+        | x, idp => idp
+
+      \func compute-base : fun base = base =>
+        inv (fun-path idp)
+
+      \lemma compute-loop (loop : G.El) =>
+        inv compute-base <* pmap fun loop *> compute-base
+          ==< rewrite (inv_inv (fun-path idp)) (<*_*> (fun-path idp) _) >==
+        fun-path idp *> pmap fun loop *> compute-base
+          ==< inv (*>-assoc (fun-path idp) (pmap fun loop) compute-base) >==
+        (fun-path idp *> pmap fun loop) *> compute-base
+          ==< rewrite (inv (fun-path-extends idp loop)) (rewrite (idp_*> loop) idp) >==
+        fun-path loop *> compute-base
+          ==< rewrite (fun-path-pres-*> loop idp) (*>-assoc (f loop) (fun-path idp) _) >==
+        f loop *> fun-path idp *> compute-base
+          ==< pmap (f loop `*>) (*>_inv (fun-path idp)) >==
+        f loop
+          `qed
+    }
+}
+
+\record GroupHomBase {X Y : Group} {
+  \field func : X -> Y
+  \field func-base : func base = base
+} \where {
+  \use \level levelSet1 {X Y : Group} : isSet (GroupHomBase {X} {Y}) => levelSet
+
+  \lemma levelSet {X Y : Group} : isSet (GroupHomBase {X} {Y}) =>
+    Set-lemma' R RisProp Rrefl \lam (h, p) => exts (h, p)
+    \where {
+      \func R (f g : GroupHomBase {X} {Y}) =>
+        \Sigma (h : \Pi (x : X) -> f.func x = g.func x) (func-base = h base *> func-base)
+
+      \func RisProp {f g : GroupHomBase {X} {Y}} (p q : R f g) : p = q =>
+        exts $ Group.elim-Prop _ $
+               Jl (\lam _ r => p.1 base *> r = q.1 base *> r -> p.1 base = q.1 base)
+                   id g.func-base (inv p.2 *> q.2)
+
+      \func Rrefl {f : GroupHomBase {X} {Y}} : R f f => (\lam _ => idp, inv (idp_*> _))
+    }
+
+  --   \use \coerce GroupHomTo->* {X Y : Group} (f : GroupHom X Y) : X ->* Y => (f , func-base)
+  --   \use \coerce ->*ToGroupHom {X Y : Group} (f : X ->* Y) : GroupHom X Y => constructor f.1 f.2
+  --   \func GroupHomEqv->* {X Y : Group} : Equiv {GroupHom X Y} {X ->* Y} =>
+  --     \new QEquiv GroupHomTo->* ->*ToGroupHom idpe idpe
+
+}
+
+\data GroupHom (X Y : Group)
+  | H (GroupHomBase {X} {Y}) \where {
+  \use \level levelSet' {X Y : Group} (A B : GroupHom X Y) : isProp (A = B) \elim A, B
+    | H a, H B => {?}
+}
+
+\func check (X Y : Group) : \Set => GroupHom X Y
+
+\func check1 (X Y : Group) : \Set => GroupHomBase {X} {Y}
+
+\class Group \extends infGroup \lp 1 {
+  \func El => LoopAbsGroup \this
+} \where {
+
+
+  --   \instance GroupCat : Cat Group
+  --     | Hom X Y =>  GroupHom X Y
+  --     | id => {?}
+  --     | o => {?}
+  --     | id-left => {?}
+  --     | id-right => {?}
+  --     | o-assoc => {?}
+  --     | univalence => {?}
+
+  \func LoopAbsGroup (X : Pointed \levels _ 1) : AbsGroup \cowith
+    | E => base = {X} base
+    | ide => idp
+    | * => *>
+    | ide-left => idp_*> _
+    | ide-right => idp
+    | *-assoc => *>-assoc _ _ _
+    | inverse => inv
+    | inverse-left => inv_*> _
+    | inverse-right => *>_inv _
+    \where {
+      \func map {X Y : Pointed \levels _ 1} (f : X ->* Y)
+        : AbsGroupHom (LoopAbsGroup X) (LoopAbsGroup Y) \cowith
+        | func p => conj f.2 (pmap f.1 p)
+        | func-ide => conj_idp f.2
+        | func-* {p q : _} => rewrite (pmap_*>-comm f.1 p q) (conj_*> f.2 _ _)
+    }
+
+  \func deloopAbsGroupHom {X Y : Group} (f : AbsGroupHom X.El Y.El)
+    : X ->* Y => (rec-Gpd X Y f.func (\lam _ _ => f.func-*), rec-Gpd.compute-base)
+    \where \open infGroup
+
+  \func LoopDeloopGroupHom {X Y : Group} (f : X ->* Y)
+    : deloopAbsGroupHom (LoopAbsGroup.map f) = f =>
+    ->*.ext paths paths-base
+    \where {
+      \open infGroup
+
+      \func g : X ->* Y => deloopAbsGroupHom (LoopAbsGroup.map f)
+
+      \func p => rec-Gpd.fun-path {X} {Y}
+
+      \func p-*> => rec-Gpd.fun-path-pres-*> {X} {Y}
+
+      \func C (x : X) : \Set =>
+        \Sigma (eq : f.1 x = g.1 x) (\Pi (a : base = x) -> f.2 *> p a = pmap f.1 a <* eq)
+
+      \func CContr : Contr (C base) \cowith
+        | center => (f.2 *> p idp, \lam a =>
+            f.2 *> p a
+              ==< pmap (f.2 `*>) (p-*> a idp) >==
+            f.2 *> conj f.2 (pmap f.1 a) *> p idp
+              ==< inv (*>-assoc f.2 _ (p idp)) >==
+            (f.2 *> conj f.2 (pmap f.1 a)) *> p idp
+              ==< pmap (`*> p idp) (
+              f.2 *> conj f.2 (pmap f.1 a)
+                ==< rewrite (<*_*> (inv f.2) _) (inv (*>-assoc f.2 (inv f.2) _)) >==
+              (f.2 *> inv f.2) *> pmap f.1 a *> f.2
+                ==< rewrite (*>_inv f.2) (idp_*> _) >==
+              pmap f.1 a *> f.2
+                `qed
+            ) >==
+            (pmap f.1 a *> f.2) *> p idp
+              ==< rewrite (<*_*> (pmap f.1 a) _) (*>-assoc _ f.2 _) >==
+            pmap f.1 a <* f.2 *> p idp
+              `qed
+        )
+        | contraction (eq, eq-paths) => ext (eq-paths idp)
+
+      \func Cs : \Pi (x : X) -> C x => elim-Contr _ CContr
+
+      \func paths (x : X) : g.1 x = f.1 x => inv (Cs x).1
+
+      \func paths-base : paths base *> f.2 = g.2 => rotatePathLeft $
+      f.2                   ==< pmap (f.2 *>) (inv (*>_inv (p idp))) >==
+      f.2 *> p idp *> g.2   ==< inv (*>-assoc f.2 _ g.2) >==
+      (f.2 *> p idp) *> g.2 ==< pmap (`*> g.2) ((Cs base).2 idp) >==
+      (Cs base).1 *> g.2    `qed
+    }
+
+  \func ->*EquivAbsGroupHom {X Y : Group} : Equiv => \new QEquiv {
+    | A => X ->* Y
+    | B => AbsGroupHom (LoopAbsGroup X) (LoopAbsGroup Y)
+    | f => LoopAbsGroup.map
+    | ret => deloopAbsGroupHom
+    | ret_f => LoopDeloopGroupHom
+    | f_sec _ => exts infGroup.rec-Gpd.compute-loop
+  }
+
+  \func conj {X : \Type} {a a' : X} (p : a = a') (q : a = a) : a' = a' =>
+    inv p <* q *> p
+
+  \func conj_idp {X : \Type} {a a' : X} (p : a = a') : conj p idp = idp \elim p
+    | idp => idp
+
+  \func conj_*> {X : \Type} {a a' : X} (p : a = a') (q : a = a) (q' : a = a)
+    : conj p (q *> q') = conj p q *> conj p q' \elim p
+    | idp => idp
+}
