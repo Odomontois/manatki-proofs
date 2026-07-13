@@ -1,5 +1,5 @@
 \import Equiv
-\import HLevel
+\import Homotopy.HLevel
 \import Paths
 
 
@@ -24,28 +24,27 @@
 \func propPath {A B : \Type } (p : A = B) : \Type =>
   \Pi (a : A) (b : B) -> Path (\lam i => p @ i) a b
 
-\func propId {A : \Type} (set : isProp A) : propPath {A} {A} idp => \lam (a a' : A) => set a a'
-
-
-\func set_equalities_are_equal
-  {A : \Type}
-  (B : A -> \Type)
-  (b_set : \Pi (a : A) -> isSet (B a))
-  (b b' : \Pi (a : A) -> B a)
-  {a a' : A}
-  (aeq : a = a')
-  (beq1 : b a = b' a)
-  (beq2 : b a' = b' a') :
-  transport (\lam aa => b aa = b' aa ) aeq beq1 = beq2 =>
-  b_set a' (b a') (b' a') (transport (\lam aa => (b aa = b' aa)) aeq beq1) beq2
-
--- simple form of SigmaExt
-\func pairExt {A B : \Type} {a a' : A} {b b' : B} (eqA : a = a') (eqB : b = b') : ((a,b) = (a',b')) =>
-  SigmaExt (\lam _ => B) (a, b) (a', b') eqA eqB
-
+-- \func propId {A : \Type} (set : isProp A) : propPath {A} {A} idp => \lam (a a' : A) => set a a'
+--
+--
+-- \func set_equalities_are_equal
+--   {A : \Type}
+--   (B : A -> \Type)
+--   (b_set : \Pi (a : A) -> isSet (B a))
+--   (b b' : \Pi (a : A) -> B a)
+--   {a a' : A}
+--   (aeq : a = a')
+--   (beq1 : b a = b' a)
+--   (beq2 : b a' = b' a') :
+--   transport (\lam aa => b aa = b' aa ) aeq beq1 = beq2 =>
+--   b_set a' (b a') (b' a') (transport (\lam aa => (b aa = b' aa)) aeq beq1) beq2
+--
+-- -- simple form of SigmaExt
+-- \func pairExt {A B : \Type} {a a' : A} {b b' : B} (eqA : a = a') (eqB : b = b') : ((a,b) = (a',b')) =>
+--   SigmaExt (\lam _ => B) (a, b) (a', b') eqA eqB
+--
 -- simple form of funExt
-\func functExt {A B : \Type} {f f' : A -> B} (eq : \Pi (a : A) -> f a = f' a) : f = f' =>
-  funExt (\lam _ => B) f f' eq
+\func functExt {A B : \Type} {f f' : A -> B} (eq : \Pi (a : A) -> f a = f' a) : f = f' => \lam i x => eq x i
 
 \func functExtElim {X Y : \Type}
                    {f g : X -> Y}

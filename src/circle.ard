@@ -1,0 +1,49 @@
+\import Algebra.Group
+\import Algebra.Meta
+\import Algebra.Monoid
+\import Debug.Meta
+\import Equiv
+\import Equiv.Univalence
+\import Function
+\import Function.Meta
+\import Meta
+\import Paths
+\import Arith.Int
+\import Paths.Meta
+
+\data Circle
+  | Point
+  | Loop I \with {
+     | left => Point
+     | right => Point
+  }
+
+\func simpleLoop : Point = Point => Loop
+
+
+\func tri : Point = Point => simpleLoop *> simpleLoop *> simpleLoop
+
+\func plus-one : Int = Int => QEquiv-to-= plus-one-quequiv \where {
+  \func plus-one-quequiv : QEquiv {Int} {Int} \cowith
+    | f x => x + 1
+    | ret x => x - 1
+    | ret_f _ => equation.abGroup
+    | f_sec _ => equation.abGroup
+}
+
+\func shift-one (p : Circle): \Set \elim p
+  | Point => Int
+  | Loop => plus-one
+
+\func shift-circle (p : Point = Point) : Int = Int => pmap shift-one p
+
+\func calc (p : Point = Point): Int => transport (\lam _ => Int) (shift-circle p) 0
+
+\func check : coe (shift-circle (Loop *> Loop)) 0 right = 2 => {?}
+
+\func test-calc => run {
+  println (coe plus-one 0 right),
+  println (coe (shift-circle idp) 0 right),
+  println (coe (shift-circle Loop) 0 right),
+  println (coe (shift-circle (simpleLoop *> simpleLoop)) 0 right),
+}
