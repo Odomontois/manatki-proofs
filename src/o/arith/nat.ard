@@ -1,15 +1,25 @@
+\import Algebra.Meta
 \import Arith.Nat
+\import Function.Meta
+\import Logic
+\import Logic.Meta
 \import Order.PartialOrder
+\import Order.StrictOrder
 \import Order.Lattice
 \import Algebra.Monoid
 \import Paths
-\open Nat (zero<=_, suc<=suc)
 \import Category
 \open Precat
 
 \func diff {n m : Nat} (p : n <= m) : \Sigma (x : Nat) (n + x = m) \elim n, m, p
-  | 0, m, zero<=_ => (m, zro-left)
-  | suc n, suc m, suc<=suc p => \let (k, p') => diff p \in (k, +-assoc {_} {n} {1} *> pmap (+ n) +-comm *> pmap suc p')
+  | 0, m, _ => (m, zro-left)
+  | suc n, 0, suc_n<=0 => absurd $ suc_n<=0 NatOrder.<.zero<suc
+  | suc n, suc m, n+1<=m+1 =>
+    \let | n<=m => suc<=suc.conv n+1<=m+1
+         | (k, p')  => diff n<=m
+         | ss : suc (n + k) = suc m => pmap suc p'
+    \in (k, equation.abMonoid ss)
+
 
 \func max (n m : Nat) : Nat \elim n, m
   | 0, m => m
@@ -18,11 +28,11 @@
 
 \func left-max {n m : Nat} : n <= max n m \elim n, m
   | 0, m => zero<=_
-  | suc n, 0 => <=-reflexive
+  | suc n, 0 => <=-refl
   | suc n, suc m => suc<=suc left-max
 
 \func right-max {n m : Nat} : m <= max n m \elim n, m
-  | 0, m => <=-reflexive
+  | 0, m => <=-refl
   | suc n, 0 => zero<=_
   | suc n, suc m => suc<=suc right-max
 

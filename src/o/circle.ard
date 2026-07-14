@@ -10,6 +10,7 @@
 \import Paths
 \import Arith.Int
 \import Paths.Meta
+\import Arith.Nat
 
 \data Circle
   | Point
@@ -18,15 +19,8 @@
      | right => Point
   }
 
-\func simpleLoop : Point = Point => Loop
-
-
-\func tri : Point = Point => simpleLoop *> simpleLoop *> simpleLoop
-
 \func plus-one : Int = Int => QEquiv-to-= plus-one-quequiv \where {
-  \func plus-one-quequiv : QEquiv {Int} {Int} \cowith
-    | f x => x + 1
-    | ret x => x - 1
+  \func plus-one-quequiv : QEquiv {Int} {Int} (__  + 1) (__ - 1) \cowith
     | ret_f _ => equation.abGroup
     | f_sec _ => equation.abGroup
 }
@@ -39,11 +33,19 @@
 
 \func calc (p : Point = Point): Int => transport (\lam _ => Int) (shift-circle p) 0
 
-\func check : coe (shift-circle (Loop *> Loop)) 0 right = 2 => {?}
+
+\lemma proofN (m : Int) (n : Nat) : coe (shift-circle (repeatLoop n)) m right = m + n \elim n
+  | 0 => equation
+  | suc n => transport_*> shift-one Loop (repeatLoop n) m *> proofN (m + 1) n *> equation
+  \where {
+  \func repeatLoop (_ : Nat) : Point = Point
+    | 0 => idp
+    | suc n => Loop *> repeatLoop n
+}
 
 \func test-calc => run {
   println (coe plus-one 0 right),
   println (coe (shift-circle idp) 0 right),
   println (coe (shift-circle Loop) 0 right),
-  println (coe (shift-circle (simpleLoop *> simpleLoop)) 0 right),
+  println (coe (shift-circle (Loop *> Loop)) 0 right)
 }
